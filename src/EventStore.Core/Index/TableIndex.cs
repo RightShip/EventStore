@@ -170,7 +170,7 @@ namespace EventStore.Core.Index
                 Directory.CreateDirectory(directory);
         }
 
-        public void Add(long commitPos, uint stream, int version, long position)
+        public void Add(long commitPos, string streamId, int version, long position)
         {
             Ensure.Nonnegative(commitPos, "commitPos");
             Ensure.Nonnegative(version, "version");
@@ -324,7 +324,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(uint stream, int version, out long position)
+        public bool TryGetOneValue(string streamId, int version, out long position)
         {
             int counter = 0;
             while (counter < 5)
@@ -365,7 +365,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetLatestEntry(string streamId, out IndexEntry32 entry)
         {
             var counter = 0;
             while (counter < 5)
@@ -403,7 +403,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetOldestEntry(string streamId, out IndexEntry32 entry)
         {
             var counter = 0;
             while (counter < 5)
@@ -441,7 +441,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry32> GetRange(uint stream, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry32> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
         {
             var counter = 0;
             while (counter < 5)

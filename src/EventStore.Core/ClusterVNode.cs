@@ -175,11 +175,9 @@ namespace EventStore.Core
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,
                                             indexCacheDepth: vNodeSettings.IndexCacheDepth);
-	        var hash = new XXHashUnsafe();
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
-                                          hash,
                                           ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
@@ -468,7 +466,6 @@ namespace EventStore.Core
             var storageScavenger = new StorageScavenger(db,
                                                         ioDispatcher,
                                                         tableIndex,
-                                                        hash,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         _nodeInfo.ExternalHttp.ToString(),
