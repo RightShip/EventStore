@@ -9,6 +9,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Index
 {
@@ -40,6 +41,9 @@ namespace EventStore.Core.Index
         private List<TableItem> _awaitingMemTables;
         private long _commitCheckpoint = -1;
         private long _prepareCheckpoint = -1;
+
+        private IHasher _lowHasher;
+        private IHasher _highHasher;
 
         private volatile bool _backgroundRunning;
         private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
@@ -74,6 +78,9 @@ namespace EventStore.Core.Index
             _indexCacheDepth = indexCacheDepth;
             _ptableVersion = ptableVersion;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
+
+            _lowHasher = new XXHashUnsafe();
+            _highHasher = new Murmur3AUnsafe();
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -176,7 +183,8 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
-            AddEntries(commitPos, new[] { new IndexEntry32(stream, version, position) });
+            var stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
+            AddEntries(commitPos, new[] { new IndexEntry32((uint)stream, version, position) });
         }
 
         public void AddEntries(long commitPos, IList<IndexEntry32> entries)
@@ -537,6 +545,14 @@ namespace EventStore.Core.Index
                 _indexMap.InOrder().ToList().ForEach(x => x.Dispose());
             }
             _indexMap.InOrder().ToList().ForEach(x => x.WaitForDisposal(TimeSpan.FromMilliseconds(5000)));
+        }
+
+        private ulong Hash(string streamId, IHasher lowHasher, IHasher highHasher, bool is64Bit){
+            ulong hash = lowHasher.Hash(streamId);
+            if(is64Bit){
+                hash = hash << 32 | highHasher.Hash(streamId);
+            }
+            return hash;
         }
 
         private class TableItem
