@@ -315,7 +315,7 @@ namespace EventStore.Core.Index
         public MergeResult AddPTable(PTable tableToAdd,
                                      long prepareCheckpoint,
                                      long commitCheckpoint,
-                                     Func<IndexEntry32, bool> recordExistsAt,
+                                     Func<IndexEntry, bool> recordExistsAt,
                                      IIndexFilenameProvider filenameProvider,
                                      int version,
                                      int indexCacheDepth = 16)

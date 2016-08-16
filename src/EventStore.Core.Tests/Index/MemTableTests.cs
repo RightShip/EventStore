@@ -457,7 +457,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void try_get_latest_entry_finds_nothing_on_empty_memtable()
         {
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsFalse(MemTable.TryGetLatestEntry(0x12, out entry));
         }
 
@@ -465,7 +465,7 @@ namespace EventStore.Core.Tests.Index
         public void try_get_latest_entry_finds_nothing_on_empty_stream()
         {
             MemTable.Add(0x11, 0x01, 0xffff);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsFalse(MemTable.TryGetLatestEntry(0x12, out entry));
         }
 
@@ -473,7 +473,7 @@ namespace EventStore.Core.Tests.Index
         public void single_item_is_latest()
         {
             MemTable.Add(0x11, 0x01, 0xffff);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -485,7 +485,7 @@ namespace EventStore.Core.Tests.Index
         {
             MemTable.Add(0x11, 0x01, 0xffff);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x02, entry.Version);
@@ -499,7 +499,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x02, 0xfff2);
             MemTable.Add(0x11, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff4);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x02, entry.Version);
@@ -512,7 +512,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x01, 0xfff5);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -522,7 +522,7 @@ namespace EventStore.Core.Tests.Index
         [Test]
         public void try_get_oldest_entry_finds_nothing_on_empty_memtable()
         {
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsFalse(MemTable.TryGetOldestEntry(0x12, out entry));
         }
 
@@ -530,7 +530,7 @@ namespace EventStore.Core.Tests.Index
         public void try_get_oldest_entry_finds_nothing_on_empty_stream()
         {
             MemTable.Add(0x11, 0x01, 0xffff);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsFalse(MemTable.TryGetOldestEntry(0x12, out entry));
         }
 
@@ -538,7 +538,7 @@ namespace EventStore.Core.Tests.Index
         public void single_item_is_oldest()
         {
             MemTable.Add(0x11, 0x01, 0xffff);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -550,7 +550,7 @@ namespace EventStore.Core.Tests.Index
         {
             MemTable.Add(0x11, 0x01, 0xffff);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -564,7 +564,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x02, 0xfff2);
             MemTable.Add(0x11, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff4);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -577,7 +577,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x01, 0xfff5);
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(0x11, out entry));
             Assert.AreEqual(0x11, entry.Stream);
             Assert.AreEqual(0x01, entry.Version);
@@ -627,7 +627,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(1, 0, 0x0004);
             MemTable.Add(1, 0, 0x0005);
 
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(0, out entry));
             Assert.AreEqual(0, entry.Stream);
             Assert.AreEqual(0, entry.Version);
@@ -643,7 +643,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(1, 0, 0x0004);
             MemTable.Add(1, 0, 0x0005);
 
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(0, out entry));
             Assert.AreEqual(0, entry.Stream);
             Assert.AreEqual(0, entry.Version);
@@ -695,7 +695,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(1, 0, 0x0004);
             MemTable.Add(1, 0, 0x0005);
 
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetLatestEntry(1, out entry));
             Assert.AreEqual(1, entry.Stream);
             Assert.AreEqual(0, entry.Version);
@@ -711,7 +711,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(1, 0, 0x0004);
             MemTable.Add(1, 0, 0x0005);
 
-            IndexEntry32 entry;
+            IndexEntry entry;
             Assert.IsTrue(MemTable.TryGetOldestEntry(1, out entry));
             Assert.AreEqual(1, entry.Stream);
             Assert.AreEqual(0, entry.Version);

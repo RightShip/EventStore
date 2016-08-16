@@ -15,7 +15,7 @@ namespace EventStore.Core.Index
         public long Count { get { return _count; } }
         public Guid Id { get { return _id; } }
 
-        private readonly ConcurrentDictionary<uint, SortedList<Entry, byte>> _hash;
+        private readonly ConcurrentDictionary<ulong, SortedList<Entry, byte>> _hash;
         private readonly Guid _id = Guid.NewGuid();
         private int _count;
 
@@ -23,7 +23,7 @@ namespace EventStore.Core.Index
 
         public HashListMemTable(int maxSize)
         {
-            _hash = new ConcurrentDictionary<uint, SortedList<Entry, byte>>();
+            _hash = new ConcurrentDictionary<ulong, SortedList<Entry, byte>>();
         }
 
         public bool MarkForConversion()
@@ -31,12 +31,12 @@ namespace EventStore.Core.Index
             return Interlocked.CompareExchange(ref _isConverting, 1, 0) == 0;
         }
 
-        public void Add(uint stream, int version, long position)
+        public void Add(ulong stream, int version, long position)
         {
-            AddEntries(new[] { new IndexEntry32(stream, version, position) });
+            AddEntries(new[] { new IndexEntry(stream, version, position) });
         }
 
-        public void AddEntries(IList<IndexEntry32> entries)
+        public void AddEntries(IList<IndexEntry> entries)
         {
             Ensure.NotNull(entries, "entries");
             Ensure.Positive(entries.Count, "entries.Count");
@@ -72,7 +72,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(uint stream, int number, out long position)
+        public bool TryGetOneValue(ulong stream, int number, out long position)
         {
             if (number < 0)
                 throw new ArgumentOutOfRangeException("number");
@@ -104,7 +104,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetLatestEntry(ulong stream, out IndexEntry entry)
         {
             entry = TableIndex.InvalidIndexEntry;
 
@@ -116,7 +116,7 @@ namespace EventStore.Core.Index
                 try
                 {
                     var latest = list.Keys[list.Count - 1];
-                    entry = new IndexEntry32(stream, latest.EvNum, latest.LogPos);
+                    entry = new IndexEntry(stream, latest.EvNum, latest.LogPos);
                     return true;
                 }
                 finally
@@ -127,7 +127,7 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetOldestEntry(ulong stream, out IndexEntry entry)
         {
             entry = TableIndex.InvalidIndexEntry;
 
@@ -139,7 +139,7 @@ namespace EventStore.Core.Index
                 try
                 {
                     var oldest = list.Keys[0];
-                    entry = new IndexEntry32(stream, oldest.EvNum, oldest.LogPos);
+                    entry = new IndexEntry(stream, oldest.EvNum, oldest.LogPos);
                     return true;
                 }
                 finally
@@ -150,12 +150,12 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry32> IterateAllInOrder()
+        public IEnumerable<IndexEntry> IterateAllInOrder()
         {
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder...");
 
             var keys = _hash.Keys.ToArray();
-            Array.Sort(keys, new ReverseComparer<uint>());
+            Array.Sort(keys, new ReverseComparer<ulong>());
 
             foreach (var key in keys)
             {
@@ -163,7 +163,7 @@ namespace EventStore.Core.Index
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     var x = list.Keys[i];
-                    yield return new IndexEntry32(key, x.EvNum, x.LogPos);
+                    yield return new IndexEntry(key, x.EvNum, x.LogPos);
                 }
             }
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");
@@ -174,14 +174,14 @@ namespace EventStore.Core.Index
             _hash.Clear();
         }
 
-        public IEnumerable<IndexEntry32> GetRange(uint stream, int startNumber, int endNumber, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(ulong stream, int startNumber, int endNumber, int? limit = null)
         {
             if (startNumber < 0)
                 throw new ArgumentOutOfRangeException("startNumber");
             if (endNumber < 0)
                 throw new ArgumentOutOfRangeException("endNumber");
 
-            var ret = new List<IndexEntry32>();
+            var ret = new List<IndexEntry>();
 
             SortedList<Entry, byte> list;
             if (_hash.TryGetValue(stream, out list))
@@ -195,7 +195,7 @@ namespace EventStore.Core.Index
                         var key = list.Keys[i];
                         if (key.EvNum < startNumber || ret.Count == limit)
                             break;
-                        ret.Add(new IndexEntry32(stream, version: key.EvNum, position: key.LogPos));
+                        ret.Add(new IndexEntry(stream, version: key.EvNum, position: key.LogPos));
                     }
                 }
                 finally

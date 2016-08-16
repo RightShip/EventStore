@@ -19,7 +19,7 @@ namespace EventStore.Core.Index
         private const int MaxMemoryTables = 1;
 
         private static readonly ILogger Log = LogManager.GetLoggerFor<TableIndex>();
-        internal static readonly IndexEntry32 InvalidIndexEntry = new IndexEntry32(0, -1, -1);
+        internal static readonly IndexEntry InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
         public long CommitCheckpoint { get { return Interlocked.Read(ref _commitCheckpoint); } }
         public long PrepareCheckpoint { get { return Interlocked.Read(ref _prepareCheckpoint); } }
@@ -108,7 +108,7 @@ namespace EventStore.Core.Index
             // this can happen (very unlikely, though) on master crash
             try
             {
-                _indexMap = IndexMap.FromFile(indexmapFile, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
+                _indexMap = IndexMap.FromFile(indexmapFile, _ptableVersion, _maxTablesPerLevel, cacheDepth: _indexCacheDepth);
                 if (_indexMap.CommitCheckpoint >= chaserCheckpoint)
                 {
                     _indexMap.Dispose(TimeSpan.FromMilliseconds(5000));
@@ -183,17 +183,22 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
-            var stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
-            AddEntries(commitPos, new[] { new IndexEntry32((uint)stream, version, position) });
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
+            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
         }
 
-        public void AddEntries(long commitPos, IList<IndexEntry32> entries)
+        public void AddEntries(long commitPos, IList<IndexEntry> entries)
         {
             //Ensure.Nonnegative(commitPos, "commitPos");
             //Ensure.NotNull(entries, "entries");
             //Ensure.Positive(entries.Count, "entries.Count");
 
             //should only be called on a single thread.
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(entries[0].StreamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
+            entries = entries.Select<IndexEntry, IndexEntry>( x => new IndexEntry(stream, x.Version, x.Position)).ToList();
+            
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
 
             table.AddEntries(entries);
@@ -334,6 +339,8 @@ namespace EventStore.Core.Index
 
         public bool TryGetOneValue(string streamId, int version, out long position)
         {
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             int counter = 0;
             while (counter < 5)
             {
@@ -350,7 +357,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetOneValueInternal(uint stream, int version, out long position)
+        private bool TryGetOneValueInternal(ulong stream, int version, out long position)
         {
             if (version < 0)
                 throw new ArgumentOutOfRangeException("version");
@@ -373,8 +380,10 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(string streamId, out IndexEntry32 entry)
+        public bool TryGetLatestEntry(string streamId, out IndexEntry entry)
         {
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
@@ -391,7 +400,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetLatestEntryInternal(uint stream, out IndexEntry32 entry)
+        private bool TryGetLatestEntryInternal(ulong stream, out IndexEntry entry)
         {
             var awaiting = _awaitingMemTables;
             foreach (var t in awaiting)
@@ -411,8 +420,10 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(string streamId, out IndexEntry32 entry)
+        public bool TryGetOldestEntry(string streamId, out IndexEntry entry)
         {
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
@@ -429,7 +440,7 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private bool TryGetOldestEntryInternal(uint stream, out IndexEntry32 entry)
+        private bool TryGetOldestEntryInternal(ulong stream, out IndexEntry entry)
         {
             var map = _indexMap;
             foreach (var table in map.InReverseOrder())
@@ -449,8 +460,10 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry32> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
         {
+            //TODO pieterg review (should we hash here?)
+            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
@@ -467,14 +480,14 @@ namespace EventStore.Core.Index
             throw new InvalidOperationException("Files are locked.");
         }
 
-        private IEnumerable<IndexEntry32> GetRangeInternal(uint stream, int startVersion, int endVersion, int? limit = null)
+        private IEnumerable<IndexEntry> GetRangeInternal(ulong stream, int startVersion, int endVersion, int? limit = null)
         {
             if (startVersion < 0)
                 throw new ArgumentOutOfRangeException("startVersion");
             if (endVersion < 0)
                 throw new ArgumentOutOfRangeException("endVersion");
 
-            var candidates = new List<IEnumerator<IndexEntry32>>();
+            var candidates = new List<IEnumerator<IndexEntry>>();
 
             var awaiting = _awaitingMemTables;
             for (int index = 0; index < awaiting.Count; index++)
@@ -492,7 +505,7 @@ namespace EventStore.Core.Index
                     candidates.Add(range);
             }
 
-            var last = new IndexEntry32(0, 0, 0);
+            var last = new IndexEntry(0, 0, 0);
             var first = true;
             while (candidates.Count > 0)
             {
@@ -512,9 +525,9 @@ namespace EventStore.Core.Index
             }
         }
 
-        private static int GetMaxOf(List<IEnumerator<IndexEntry32>> enumerators)
+        private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
         {
-            var max = new IndexEntry32(ulong.MinValue, long.MinValue);
+            var max = new IndexEntry(ulong.MinValue, long.MinValue);
             int idx = 0;
             for (int i = 0; i < enumerators.Count; i++)
             {

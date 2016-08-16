@@ -385,7 +385,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private int GetStreamLastEventNumberUncached(TFReaderLease reader, string streamId)
         {
-            IndexEntry32 latestEntry;
+            IndexEntry latestEntry;
             if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
                 return ExpectedVersion.NoStream;
 

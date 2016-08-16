@@ -424,7 +424,7 @@ namespace EventStore.Core.TransactionLog.Chunks
                 metaStreamId = SystemStreams.MetastreamOf(eventStreamId);
             }
 
-            IndexEntry32 e;
+            IndexEntry e;
             var allInChunk = _tableIndex.TryGetOldestEntry(streamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd
                           && _tableIndex.TryGetLatestEntry(streamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd
                           && _tableIndex.TryGetOldestEntry(metaStreamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd

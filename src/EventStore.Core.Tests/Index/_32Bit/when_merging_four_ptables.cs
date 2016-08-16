@@ -53,7 +53,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void the_items_are_sorted()
         {
-            var last = new IndexEntry32(ulong.MaxValue, long.MaxValue);
+            var last = new IndexEntry(ulong.MaxValue, long.MaxValue);
             foreach(var item in _newtable.IterateAllInOrder())
             {
                 Assert.IsTrue(last.Key > item.Key || last.Key == item.Key && last.Position > item.Position);

@@ -14,7 +14,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             memTable.Add(0x11, 0x01, 0xffff);
             using (var ptable = PTable.FromMemtable(memTable, Filename, ptableVersion))
             {
-                IndexEntry32 entry;
+                IndexEntry entry;
                 Assert.IsFalse(ptable.TryGetLatestEntry(0x12, out entry));
             }
         }
@@ -26,7 +26,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             memTable.Add(0x11, 0x01, 0xffff);
             using (var ptable = PTable.FromMemtable(memTable, Filename, ptableVersion))
             {
-                IndexEntry32 entry;
+                IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetLatestEntry(0x11, out entry));
                 Assert.AreEqual(0x11, entry.Stream);
                 Assert.AreEqual(0x01, entry.Version);
@@ -42,7 +42,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             memTable.Add(0x11, 0x02, 0xfff2);
             using (var ptable = PTable.FromMemtable(memTable, Filename, ptableVersion))
             {
-                IndexEntry32 entry;
+                IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetLatestEntry(0x11, out entry));
                 Assert.AreEqual(0x11, entry.Stream);
                 Assert.AreEqual(0x02, entry.Version);
@@ -60,7 +60,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             memTable.Add(0x11, 0x02, 0xfff4);
             using (var ptable = PTable.FromMemtable(memTable, Filename, ptableVersion))
             {
-                IndexEntry32 entry;
+                IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetLatestEntry(0x11, out entry));
                 Assert.AreEqual(0x11, entry.Stream);
                 Assert.AreEqual(0x02, entry.Version);
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             memTable.Add(0x11, 0x01, 0xfff5);
             using (var ptable = PTable.FromMemtable(memTable, Filename, ptableVersion))
             {
-                IndexEntry32 entry;
+                IndexEntry entry;
                 Assert.IsTrue(ptable.TryGetLatestEntry(0x11, out entry));
                 Assert.AreEqual(0x11, entry.Stream);
                 Assert.AreEqual(0x01, entry.Version);

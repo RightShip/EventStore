@@ -6,7 +6,7 @@ namespace EventStore.Core.Tests.Services.Storage
 {
     public class FakeTableIndex: ITableIndex
     {
-        internal static readonly IndexEntry32 InvalidIndexEntry = new IndexEntry32(0, -1, -1);
+        internal static readonly IndexEntry32 InvalidIndexEntry = new IndexEntry(0, -1, -1);
 
         public long PrepareCheckpoint { get { throw new NotImplementedException(); } }
         public long CommitCheckpoint { get { throw new NotImplementedException(); } }

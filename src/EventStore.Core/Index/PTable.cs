@@ -271,7 +271,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        public IEnumerable<IndexEntry32> IterateAllInOrder()
+        public IEnumerable<IndexEntry> IterateAllInOrder()
         {
             var workItem = GetWorkItem();
             try
@@ -288,9 +288,9 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(uint stream, int number, out long position)
+        public bool TryGetOneValue(ulong stream, int number, out long position)
         {
-            IndexEntry32 entry;
+            IndexEntry entry;
             if (TryGetLargestEntry(stream, number, number, out entry))
             {
                 position = entry.Position;
@@ -300,12 +300,12 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetLatestEntry(ulong stream, out IndexEntry entry)
         {
             return TryGetLargestEntry(stream, 0, int.MaxValue, out entry);
         }
 
-        private bool TryGetLargestEntry(uint stream, int startNumber, int endNumber, out IndexEntry32 entry)
+        private bool TryGetLargestEntry(ulong stream, int startNumber, int endNumber, out IndexEntry entry)
         {
             Ensure.Nonnegative(startNumber, "startNumber");
             Ensure.Nonnegative(endNumber, "endNumber");
@@ -329,7 +329,7 @@ namespace EventStore.Core.Index
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
-                    IndexEntry32 midpoint = ReadEntry(IndexEntrySize, mid, workItem);
+                    IndexEntry midpoint = ReadEntry(IndexEntrySize, mid, workItem);
                     if (midpoint.Key > endKey)
                         low = mid + 1;
                     else
@@ -350,12 +350,12 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOldestEntry(uint stream, out IndexEntry32 entry)
+        public bool TryGetOldestEntry(ulong stream, out IndexEntry entry)
         {
             return TryGetSmallestEntry(stream, 0, int.MaxValue, out entry);
         }
 
-        private bool TryGetSmallestEntry(uint stream, int startNumber, int endNumber, out IndexEntry32 entry)
+        private bool TryGetSmallestEntry(ulong stream, int startNumber, int endNumber, out IndexEntry entry)
         {
             Ensure.Nonnegative(startNumber, "startNumber");
             Ensure.Nonnegative(endNumber, "endNumber");
@@ -378,7 +378,7 @@ namespace EventStore.Core.Index
                 while (low < high)
                 {
                     var mid = low + (high - low + 1) / 2;
-                    IndexEntry32 midpoint = ReadEntry(IndexEntrySize, mid, workItem);
+                    IndexEntry midpoint = ReadEntry(IndexEntrySize, mid, workItem);
                     if (midpoint.Key < startKey)
                         high = mid - 1;
                     else
@@ -399,12 +399,12 @@ namespace EventStore.Core.Index
             }
         }
 
-        public IEnumerable<IndexEntry32> GetRange(uint stream, int startNumber, int endNumber, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(ulong stream, int startNumber, int endNumber, int? limit = null)
         {
             Ensure.Nonnegative(startNumber, "startNumber");
             Ensure.Nonnegative(endNumber, "endNumber");
 
-            var result = new List<IndexEntry32>();
+            var result = new List<IndexEntry>();
             var startKey = BuildKey(stream, startNumber);
             var endKey = BuildKey(stream, endNumber);
 
@@ -421,7 +421,7 @@ namespace EventStore.Core.Index
                 while (low < high)
                 {
                     var mid = low + (high - low) / 2;
-                    IndexEntry32 midpoint = ReadEntry(IndexEntrySize, mid, workItem);
+                    IndexEntry midpoint = ReadEntry(IndexEntrySize, mid, workItem);
                     if (midpoint.Key <= endKey)
                         high = mid;
                     else
@@ -431,7 +431,7 @@ namespace EventStore.Core.Index
                 PositionAtEntry(IndexEntrySize, high, workItem);
                 for (long i=high, n=Count; i<n; ++i)
                 {
-                    IndexEntry32 entry = ReadNextNoSeek(workItem);
+                    IndexEntry entry = ReadNextNoSeek(workItem);
                     if (entry.Key > endKey)
                         throw new Exception(string.Format("entry.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (entry.Key < startKey)
@@ -447,7 +447,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        private static ulong BuildKey(uint stream, int version)
+        private static ulong BuildKey(ulong stream, int version)
         {
             return ((uint)version) | (((ulong)stream) << 32);
         }
@@ -497,19 +497,19 @@ namespace EventStore.Core.Index
             workItem.Stream.Seek(indexEntrySize * indexNum + PTableHeader.Size, SeekOrigin.Begin);
         }
 
-        private static IndexEntry32 ReadEntry(int indexEntrySize, long indexNum, WorkItem workItem)
+        private static IndexEntry ReadEntry(int indexEntrySize, long indexNum, WorkItem workItem)
         {
             long seekTo = indexEntrySize * indexNum + PTableHeader.Size;
             workItem.Stream.Seek(seekTo, SeekOrigin.Begin);
             return ReadNextNoSeek(workItem);
         }
 
-        private static IndexEntry32 ReadNextNoSeek(WorkItem workItem)
+        private static IndexEntry ReadNextNoSeek(WorkItem workItem)
         {
             //workItem.Stream.Read(workItem.Buffer, 0, IndexEntrySize);
             //var entry = (IndexEntry)Marshal.PtrToStructure(workItem.BufferHandle.AddrOfPinnedObject(), typeof(IndexEntry));
             //return entry;
-            return new IndexEntry32(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
+            return new IndexEntry(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
         }
 
         private WorkItem GetWorkItem()

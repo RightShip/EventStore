@@ -22,12 +22,15 @@ namespace EventStore.Core.Index
             Ensure.NotNullOrEmpty(filename, "filename");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
 
+            //TODO pieterg - fix this
+            var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
+
             //Log.Trace("Started dumping MemTable [{0}] into PTable...", table.Id);
             var sw = Stopwatch.StartNew();
             using (var fs = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None,
                                            DefaultSequentialBufferSize, FileOptions.SequentialScan))
             {
-                fs.SetLength(PTableHeader.Size + IndexEntry32Size * (long)table.Count + MD5Size); // EXACT SIZE
+                fs.SetLength(PTableHeader.Size + indexEntrySize * (long)table.Count + MD5Size); // EXACT SIZE
                 fs.Seek(0, SeekOrigin.Begin);
 
                 using (var md5 = MD5.Create())
@@ -39,11 +42,17 @@ namespace EventStore.Core.Index
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
                     // WRITE INDEX ENTRIES
-                    var buffer = new byte[IndexEntry32Size];
+                    var buffer = new byte[indexEntrySize];
                     foreach (var record in table.IterateAllInOrder())
                     {
                         var rec = record;
-                        AppendRecordTo(bs, rec.Bytes, buffer);
+                        if (version == PTableVersions.Index32Bit){
+                            var entry32Bit = new IndexEntry32((uint)rec.Stream, rec.Version, rec.Position);
+                            AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                        }else {
+                            var entry64Bit = new IndexEntry64(rec.Stream, rec.Version, rec.Position);
+                            AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                        }
                     }
                     bs.Flush();
                     cs.FlushFinalBlock();
@@ -57,11 +66,14 @@ namespace EventStore.Core.Index
             return new PTable(filename, table.Id, version, depth: cacheDepth);
         }
 
-        public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<IndexEntry32, bool> recordExistsAt, int version, int cacheDepth = 16)
+        public static PTable MergeTo(IList<PTable> tables, string outputFile, Func<IndexEntry, bool> recordExistsAt, int version, int cacheDepth = 16)
         {
             Ensure.NotNull(tables, "tables");
             Ensure.NotNullOrEmpty(outputFile, "outputFile");
             Ensure.Nonnegative(cacheDepth, "cacheDepth");
+
+            //TODO pieterg - fix this
+            var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
 
             var fileSize = GetFileSize(tables); // approximate file size
             if (tables.Count == 2)
@@ -96,7 +108,7 @@ namespace EventStore.Core.Index
                     var headerBytes = new PTableHeader((byte)version).AsByteArray();
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
-                    var buffer = new byte[IndexEntry32Size];
+                    var buffer = new byte[indexEntrySize];
                     // WRITE INDEX ENTRIES
                     while (enumerators.Count > 0)
                     {
@@ -104,7 +116,13 @@ namespace EventStore.Core.Index
                         var current = enumerators[idx].Current;
                         if (recordExistsAt(current))
                         {
-                            AppendRecordTo(bs, current.Bytes, buffer);
+                            if (version == PTableVersions.Index32Bit){
+                                var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
+                                AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                            }else {
+                                var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
+                                AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                            }
                             dumpedEntryCount += 1;
                         }
                         if (!enumerators[idx].MoveNext())
@@ -131,8 +149,11 @@ namespace EventStore.Core.Index
         }
 
         private static PTable MergeTo2(IList<PTable> tables, long fileSize, string outputFile,
-                                       Func<IndexEntry32, bool> recordExistsAt, int version, int cacheDepth)
+                                       Func<IndexEntry, bool> recordExistsAt, int version, int cacheDepth)
         {
+            //TODO pieterg - fix this
+            var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
+
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
 
@@ -153,12 +174,12 @@ namespace EventStore.Core.Index
                     cs.Write(headerBytes, 0, headerBytes.Length);
 
                     // WRITE INDEX ENTRIES
-                    var buffer = new byte[IndexEntry32Size];
+                    var buffer = new byte[indexEntrySize];
                     var enum1 = enumerators[0];
                     var enum2 = enumerators[1];
                     bool available1 = enum1.MoveNext();
                     bool available2 = enum2.MoveNext();
-                    IndexEntry32 current;
+                    IndexEntry current;
                     while (available1 || available2)
                     {
                         if (available1 && (!available2 || enum1.Current.CompareTo(enum2.Current) > 0))
@@ -174,7 +195,13 @@ namespace EventStore.Core.Index
 
                         if (recordExistsAt(current))
                         {
-                            AppendRecordTo(bs, current.Bytes, buffer);
+                            if (version == PTableVersions.Index32Bit){
+                                var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
+                                AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                            }else {
+                                var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
+                                AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                            }
                             dumpedEntryCount += 1;
                         }
                     }
@@ -204,10 +231,10 @@ namespace EventStore.Core.Index
             return PTableHeader.Size + IndexEntry32Size * count + MD5Size;
         }
 
-        private static int GetMaxOf(List<IEnumerator<IndexEntry32>> enumerators)
+        private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
         {
             //TODO GFY IF WE LIMIT THIS TO FOUR WE CAN UNROLL THIS LOOP AND WILL BE FASTER
-            var max = new IndexEntry32(ulong.MinValue, long.MinValue);
+            var max = new IndexEntry(ulong.MinValue, long.MinValue);
             int idx = 0;
             for (int i = 0; i < enumerators.Count; i++)
             {

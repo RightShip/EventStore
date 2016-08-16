@@ -6,6 +6,7 @@ namespace EventStore.Core.Index
     {
         public UInt64 Key;
         public string StreamId;
+        public byte[] Bytes;
         public Int32 Version;
         public UInt64 Stream;
         public Int64 Position;
@@ -24,9 +25,9 @@ namespace EventStore.Core.Index
 
         public IndexEntry(string streamid, int version, long position) : this()
         {
-            streamid = streamid;
-            version = version;
-            position = position;
+            StreamId = streamid;
+            Version = version;
+            Position = position;
         }
 
         public int CompareTo(IndexEntry other)
