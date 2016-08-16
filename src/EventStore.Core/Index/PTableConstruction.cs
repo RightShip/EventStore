@@ -48,10 +48,10 @@ namespace EventStore.Core.Index
                         var rec = record;
                         if (version == PTableVersions.Index32Bit){
                             var entry32Bit = new IndexEntry32((uint)rec.Stream, rec.Version, rec.Position);
-                            AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                            AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
                         }else {
                             var entry64Bit = new IndexEntry64(rec.Stream, rec.Version, rec.Position);
-                            AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                            AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
                         }
                     }
                     bs.Flush();
@@ -118,10 +118,10 @@ namespace EventStore.Core.Index
                         {
                             if (version == PTableVersions.Index32Bit){
                                 var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                                AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
                             }else {
                                 var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                                AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
                             }
                             dumpedEntryCount += 1;
                         }
@@ -197,10 +197,10 @@ namespace EventStore.Core.Index
                         {
                             if (version == PTableVersions.Index32Bit){
                                 var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry32Bit.Bytes, buffer);
+                                AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
                             }else {
                                 var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry64Bit.Bytes, buffer);
+                                AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
                             }
                             dumpedEntryCount += 1;
                         }
@@ -248,10 +248,10 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-        private static void AppendRecordTo(Stream stream, byte* bytes, byte[] buffer)
+        private static void AppendRecordTo(Stream stream, byte* bytes, byte[] buffer, int indexEntrySize)
         {
-            Marshal.Copy((IntPtr)bytes, buffer, 0, IndexEntry32Size);
-            stream.Write(buffer, 0, IndexEntry32Size);
+            Marshal.Copy((IntPtr)bytes, buffer, 0, indexEntrySize);
+            stream.Write(buffer, 0, indexEntrySize);
         }
 
 /*
