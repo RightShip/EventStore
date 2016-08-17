@@ -43,6 +43,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         public long HashCollisions { get { return Interlocked.Read(ref _hashCollisions); } }
 
         private readonly IIndexBackend _backend;
+        private readonly IHasher _hasher;
         private readonly ITableIndex _tableIndex;
         private readonly StreamMetadata _metastreamMetadata;
 
@@ -51,13 +52,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _notCachedStreamInfo;
         private int _hashCollisionReadLimit;
 
-        public IndexReader(IIndexBackend backend, ITableIndex tableIndex, StreamMetadata metastreamMetadata, int hashCollisionReadLimit)
+        public IndexReader(IIndexBackend backend, IHasher hasher, ITableIndex tableIndex, StreamMetadata metastreamMetadata, int hashCollisionReadLimit)
         {
             Ensure.NotNull(backend, "backend");
+            Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(tableIndex, "tableIndex");
             Ensure.NotNull(metastreamMetadata, "metastreamMetadata");
 
             _backend = backend;
+            _hasher = hasher;
             _tableIndex = tableIndex;
             _metastreamMetadata = metastreamMetadata;
             _hashCollisionReadLimit = hashCollisionReadLimit;
@@ -121,14 +124,15 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Nonnegative(eventNumber, "eventNumber");
 
+            var streamHash = _hasher.CombinedHash(streamId);
             long position;
-            if (_tableIndex.TryGetOneValue(streamId, eventNumber, out position))
+            if (_tableIndex.TryGetOneValue(streamHash, eventNumber, out position))
             {
                 var rec = ReadPrepareInternal(reader, position);
                 if (rec != null && rec.EventStreamId == streamId)
                     return rec;
 
-                foreach (var indexEntry in _tableIndex.GetRange(streamId, eventNumber, eventNumber))
+                foreach (var indexEntry in _tableIndex.GetRange(streamHash, eventNumber, eventNumber))
                 {
                     Interlocked.Increment(ref _hashCollisions);
                     if (indexEntry.Position == position) // already checked that
@@ -158,6 +162,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.Nonnegative(fromEventNumber, "fromEventNumber");
             Ensure.Positive(maxCount, "maxCount");
 
+            var streamHash = _hasher.CombinedHash(streamId);
             using (var reader = _backend.BorrowReader())
             {
                 var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
@@ -180,7 +185,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                                                      metadata, minEventNumber, lastEventNumber, isEndOfStream: false);
                 startEventNumber = Math.Max(startEventNumber, minEventNumber);
 
-                var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
+                var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
 
@@ -206,6 +211,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             Ensure.NotNullOrEmpty(streamId, "streamId");
             Ensure.Positive(maxCount, "maxCount");
 
+            var streamHash = _hasher.CombinedHash(streamId);
             using (var reader = _backend.BorrowReader())
             {
                 var lastEventNumber = GetStreamLastEventNumberCached(reader, streamId);
@@ -234,7 +240,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                     startEventNumber = minEventNumber;
                 }
 
-                var recordsQuery = _tableIndex.GetRange(streamId, startEventNumber, endEventNumber)
+                var recordsQuery = _tableIndex.GetRange(streamHash, startEventNumber, endEventNumber)
                                               .Select(x => new { x.Version, Prepare = ReadPrepareInternal(reader, x.Position) })
                                               .Where(x => x.Prepare != null && x.Prepare.EventStreamId == streamId);
 
@@ -385,8 +391,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
         private int GetStreamLastEventNumberUncached(TFReaderLease reader, string streamId)
         {
+            var streamHash = _hasher.CombinedHash(streamId);
             IndexEntry latestEntry;
-            if (!_tableIndex.TryGetLatestEntry(streamId, out latestEntry))
+            if (!_tableIndex.TryGetLatestEntry(streamHash, out latestEntry))
                 return ExpectedVersion.NoStream;
 
             var rec = ReadPrepareInternal(reader, latestEntry.Position);
@@ -395,7 +402,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 return latestEntry.Version;
 
             int count = 0;
-            foreach (var indexEntry in _tableIndex.GetRange(streamId, 0, int.MaxValue, limit: _hashCollisionReadLimit))
+            foreach (var indexEntry in _tableIndex.GetRange(streamHash, 0, int.MaxValue, limit: _hashCollisionReadLimit))
             {
                 var r = ReadPrepareInternal(reader, indexEntry.Position);
                 if (r != null && r.EventStreamId == streamId)

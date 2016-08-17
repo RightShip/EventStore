@@ -5,7 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Index
+namespace EventStore.Core.Tests.Index._32Bit
 {
     [TestFixture]
     public class HashListMemTableTests : MemTableTestsFixture
@@ -103,7 +103,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.IterateAllInOrder());
+            var list = new List<IndexEntry>(MemTable.IterateAllInOrder());
             Assert.AreEqual(3, list.Count);
             Assert.AreEqual(0x12, list[0].Stream);
             Assert.AreEqual(0x01, list[0].Version);
@@ -122,7 +122,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x12, 0x01, 0xfff4);
-            var list = new List<IndexEntry32>(MemTable.IterateAllInOrder());
+            var list = new List<IndexEntry>(MemTable.IterateAllInOrder());
             Assert.AreEqual(3, list.Count);
             Assert.AreEqual(0x12, list[0].Stream);
             Assert.AreEqual(0x01, list[0].Version);
@@ -141,7 +141,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x01, 0x02));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x01, 0x02));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x02, list[0].Version);
@@ -159,7 +159,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
             MemTable.Add(0x11, 0x02, 0xfff7);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x01, 0x02));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x01, 0x02));
             Assert.AreEqual(4, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x02, list[0].Version);
@@ -181,7 +181,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x14, 0x01, 0x02));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x14, 0x01, 0x02));
             Assert.AreEqual(0, list.Count);
         }
 
@@ -191,7 +191,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x01, 0x03, 0x05));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x01, 0x03, 0x05));
             Assert.AreEqual(0, list.Count);
         }
 
@@ -203,7 +203,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
             MemTable.Add(0x11, 0x04, 0xfff4);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x01, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x01, 0x04));
             Assert.AreEqual(3, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x04, list[0].Version);
@@ -222,7 +222,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x01, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x01, 0x04));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x02, list[0].Version);
@@ -238,7 +238,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x00, 0x02));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x00, 0x02));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x02, list[0].Version);
@@ -254,7 +254,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x12, 0x01, 0xfff3);
             MemTable.Add(0x11, 0x02, 0xfff2);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x00, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x00, 0x04));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x02, list[0].Version);
@@ -270,7 +270,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x00, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x00, 0x04));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x03, list[0].Version);
@@ -287,7 +287,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x03, 0xfff2);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x00, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x00, 0x04));
             Assert.AreEqual(3, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x03, list[0].Version);
@@ -307,7 +307,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x02, 0x06));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x02, 0x06));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x05, list[0].Version);
@@ -324,7 +324,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x03, 0xfff2);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x02, 0x06));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x02, 0x06));
             Assert.AreEqual(3, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x05, list[0].Version);
@@ -343,7 +343,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x02, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x02, 0x04));
             Assert.AreEqual(1, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x03, list[0].Version);
@@ -358,7 +358,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x03, 0xfff4);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x02, 0x04));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x02, 0x04));
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(0x11, list[0].Stream);
             Assert.AreEqual(0x03, list[0].Version);
@@ -375,7 +375,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x00, 0x00));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x00, 0x00));
             Assert.AreEqual(0, list.Count);
         }
 
@@ -385,7 +385,7 @@ namespace EventStore.Core.Tests.Index
             MemTable.Add(0x11, 0x01, 0xfff1);
             MemTable.Add(0x11, 0x03, 0xfff3);
             MemTable.Add(0x11, 0x05, 0xfff5);
-            var list = new List<IndexEntry32>(MemTable.GetRange(0x11, 0x06, 0x06));
+            var list = new List<IndexEntry>(MemTable.GetRange(0x11, 0x06, 0x06));
             Assert.AreEqual(0, list.Count);
         }
 

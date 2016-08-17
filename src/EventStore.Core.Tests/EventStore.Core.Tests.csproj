@@ -264,6 +264,7 @@
     <Compile Include="Http\TestSuiteMarkerBase.cs" />
     <Compile Include="Http\Users\StreamHelpers.cs" />
     <Compile Include="Http\Users\users.cs" />
+    <Compile Include="Index\_32Bit\MemTableTests.cs" />
     <Compile Include="Index\_64Bit\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\_64Bit\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\_64Bit\adding_item_to_empty_index_map.cs" />
@@ -303,7 +304,6 @@
     <Compile Include="Index\_32Bit\destroying_ptable.cs" />
     <Compile Include="Index\_32Bit\opening_a_ptable_with_more_than_32bits_of_records.cs" />
     <Compile Include="Index\_32Bit\index_map_should.cs" />
-    <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\FakeFilenameProvider.cs" />
     <Compile Include="Index\IndexEntryTests.cs" />
     <Compile Include="Index\_32Bit\ptable_midpoint_cache_should.cs" />

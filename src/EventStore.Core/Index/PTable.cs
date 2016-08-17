@@ -511,15 +511,8 @@ namespace EventStore.Core.Index
 
         private static IndexEntry ReadNextNoSeek(WorkItem workItem, int ptableVersion)
         {
-            IndexEntry entry;
-            if(ptableVersion == PTableVersions.Index32Bit){
-                var entry32 = new IndexEntry32(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
-                entry = new IndexEntry(entry32.Key, entry32.Position);
-            }else{
-                var entry64 = new IndexEntry64((ulong)workItem.Reader.ReadInt32() | workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
-                entry = new IndexEntry(entry64.Key, entry64.Position);
-            }
-            // Console.WriteLine("Read from PTable ({0}bit): {1}", ptableVersion == PTableVersions.Index32Bit ? 32 : 64, entry);
+            var bytes = workItem.Reader.ReadBytes(ptableVersion == PTableVersions.Index32Bit ? 16 : 20);
+            var entry = new IndexEntry(bytes);
             return entry;
         }
 

@@ -94,5 +94,9 @@ namespace EventStore.Core.Index.Hashes
         {
             return (x << r) | (x >> (32 - r));
         }
+
+        public ulong CombinedHash(string streamId){
+            throw new NotImplementedException();
+        }
     }
 }

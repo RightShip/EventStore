@@ -26,6 +26,7 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly TFChunkDb _db;
         private readonly IODispatcher _ioDispatcher;
         private readonly ITableIndex _tableIndex;
+        private readonly IHasher _hasher;
         private readonly Guid _scavengeId;
         private readonly string _nodeEndpoint;
         private readonly IReadIndex _readIndex;
@@ -33,18 +34,20 @@ namespace EventStore.Core.TransactionLog.Chunks
         private readonly bool _unsafeIgnoreHardDeletes;
         private const int MaxRetryCount = 5;
 
-        public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IReadIndex readIndex,
+        public TFChunkScavenger(TFChunkDb db, IODispatcher ioDispatcher, ITableIndex tableIndex, IHasher hasher, IReadIndex readIndex,
                                 Guid scavengeId, string nodeEndpoint, long? maxChunkDataSize = null, bool unsafeIgnoreHardDeletes=false)
         {
             Ensure.NotNull(db, "db");
             Ensure.NotNull(ioDispatcher, "ioDispatcher");
             Ensure.NotNull(tableIndex, "tableIndex");
+            Ensure.NotNull(hasher, "hasher");
             Ensure.NotNull(nodeEndpoint, "nodeEndpoint");
             Ensure.NotNull(readIndex, "readIndex");
 
             _db = db;
             _ioDispatcher = ioDispatcher;
             _tableIndex = tableIndex;
+            _hasher = hasher;
             _scavengeId = scavengeId;
             _nodeEndpoint = nodeEndpoint;
             _readIndex = readIndex;
@@ -404,31 +407,31 @@ namespace EventStore.Core.TransactionLog.Chunks
 
         private bool IsSoftDeletedTempStreamWithinSameChunk(string eventStreamId, long chunkStart, long chunkEnd)
         {
-            string streamId = eventStreamId;
-            string metaStreamId = String.Empty;
+            ulong sh;
+            ulong msh;
             if (SystemStreams.IsMetastream(eventStreamId))
             {
                 var originalStreamId = SystemStreams.OriginalStreamOf(eventStreamId);
                 var meta = _readIndex.GetStreamMetadata(originalStreamId);
                 if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
                     return false;
-                streamId = originalStreamId;
-                metaStreamId = eventStreamId;
+                sh = _hasher.CombinedHash(originalStreamId);
+                msh = _hasher.CombinedHash(eventStreamId);
             }
             else
             {
                 var meta = _readIndex.GetStreamMetadata(eventStreamId);
                 if (meta.TruncateBefore != EventNumber.DeletedStream || meta.TempStream != true)
                     return false;
-                streamId = eventStreamId;
-                metaStreamId = SystemStreams.MetastreamOf(eventStreamId);
+                sh = _hasher.CombinedHash(eventStreamId);
+                msh = _hasher.CombinedHash(SystemStreams.MetastreamOf(eventStreamId));
             }
 
             IndexEntry e;
-            var allInChunk = _tableIndex.TryGetOldestEntry(streamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd
-                          && _tableIndex.TryGetLatestEntry(streamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd
-                          && _tableIndex.TryGetOldestEntry(metaStreamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd
-                          && _tableIndex.TryGetLatestEntry(metaStreamId, out e) && e.Position >= chunkStart && e.Position < chunkEnd;
+            var allInChunk = _tableIndex.TryGetOldestEntry(sh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetLatestEntry(sh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetOldestEntry(msh, out e) && e.Position >= chunkStart && e.Position < chunkEnd
+                          && _tableIndex.TryGetLatestEntry(msh, out e) && e.Position >= chunkStart && e.Position < chunkEnd;
             return allInChunk;
         }
 

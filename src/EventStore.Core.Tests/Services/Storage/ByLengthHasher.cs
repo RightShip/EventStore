@@ -1,3 +1,4 @@
+using System;
 using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage
@@ -17,6 +18,11 @@ namespace EventStore.Core.Tests.Services.Storage
         public uint Hash(byte[] data, int offset, uint len, uint seed)
         {
             return len;
+        }
+
+        public ulong CombinedHash(string s)
+        {
+            throw new NotImplementedException();
         }
     }
 }

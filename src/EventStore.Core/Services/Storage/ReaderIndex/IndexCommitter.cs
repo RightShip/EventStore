@@ -33,6 +33,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private readonly IIndexBackend _backend;
         private readonly IIndexReader _indexReader;
         private readonly ITableIndex _tableIndex;
+        private readonly IHasher _hasher;
         private readonly bool _additionalCommitChecks;
         private long _persistedPreparePos = -1;
         private long _persistedCommitPos = -1;
@@ -40,12 +41,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
         private long _lastCommitPosition = -1;
 
         public IndexCommitter(IPublisher bus, IIndexBackend backend, IIndexReader indexReader,
-                              ITableIndex tableIndex, bool additionalCommitChecks)
+                              ITableIndex tableIndex, IHasher hasher, bool additionalCommitChecks)
         {
             _bus = bus;
             _backend = backend;
             _indexReader = indexReader;
             _tableIndex = tableIndex;
+            _hasher = hasher;
             _additionalCommitChecks = additionalCommitChecks;
         }
 
@@ -150,7 +152,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 return eventNumber;  // already committed
 
             string streamId = null;
-            var indexEntries = new List<IndexEntryFoo>();
+            ulong streamHash = 0;
+            var indexEntries = new List<IndexEntry>();
             var prepares = new List<PrepareLogRecord>();
 
             foreach (var prepare in GetTransactionPrepares(commit.TransactionPosition, commit.LogPosition))
@@ -161,6 +164,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (streamId == null)
                 {
                     streamId = prepare.EventStreamId;
+                    streamHash = _hasher.CombinedHash(prepare.EventStreamId);
                 }
                 else
                 {
@@ -173,7 +177,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 if (new TFPos(commit.LogPosition, prepare.LogPosition) > new TFPos(_persistedCommitPos, _persistedPreparePos))
                 {
-                    indexEntries.Add(new IndexEntryFoo(streamId, eventNumber, prepare.LogPosition));
+                    indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
                     prepares.Add(prepare);
                 }
             }
@@ -183,7 +187,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (_additionalCommitChecks)
                 {
                     CheckStreamVersion(streamId, indexEntries[0].Version, commit);
-                    CheckDuplicateEvents(streamId, commit, indexEntries, prepares);
+                    CheckDuplicateEvents(streamHash, commit, indexEntries, prepares);
                 }
                 _tableIndex.AddEntries(commit.LogPosition, indexEntries); // atomically add a whole bulk of entries
             }
@@ -227,7 +231,8 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             var lastPrepare = commitedPrepares[commitedPrepares.Count - 1];
 
             string streamId = lastPrepare.EventStreamId;
-            var indexEntries = new List<IndexEntryFoo>();
+            ulong streamHash = _hasher.CombinedHash(streamId);
+            var indexEntries = new List<IndexEntry>();
             var prepares = new List<PrepareLogRecord>();
 
             foreach (var prepare in commitedPrepares)
@@ -268,7 +273,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
 
                 if (new TFPos(prepare.LogPosition, prepare.LogPosition) > new TFPos(_persistedCommitPos, _persistedPreparePos))
                 {
-                    indexEntries.Add(new IndexEntryFoo(streamId, eventNumber, prepare.LogPosition));
+                    indexEntries.Add(new IndexEntry(streamHash, eventNumber, prepare.LogPosition));
                     prepares.Add(prepare);
                 }
             }
@@ -278,7 +283,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                 if (_additionalCommitChecks)
                 {
                     CheckStreamVersion(streamId, indexEntries[0].Version, null); // TODO AN: bad passing null commit
-                    CheckDuplicateEvents(streamId, null, indexEntries, prepares); // TODO AN: bad passing null commit
+                    CheckDuplicateEvents(streamHash, null, indexEntries, prepares); // TODO AN: bad passing null commit
                 }
                 _tableIndex.AddEntries(lastPrepare.LogPosition, indexEntries); // atomically add a whole bulk of entries
             }
@@ -352,11 +357,11 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
             }
         }
 
-        private void CheckDuplicateEvents(string streamId, CommitLogRecord commit, IList<IndexEntryFoo> indexEntries, IList<PrepareLogRecord> prepares)
+        private void CheckDuplicateEvents(ulong streamHash, CommitLogRecord commit, IList<IndexEntry> indexEntries, IList<PrepareLogRecord> prepares)
         {
             using (var reader = _backend.BorrowReader())
             {
-                var entries = _tableIndex.GetRange(streamId, indexEntries[0].Version, indexEntries[indexEntries.Count - 1].Version);
+                var entries = _tableIndex.GetRange(streamHash, indexEntries[0].Version, indexEntries[indexEntries.Count - 1].Version);
                 foreach (var indexEntry in entries)
                 {
                     var prepare = prepares[indexEntry.Version - indexEntries[0].Version];
@@ -367,9 +372,9 @@ namespace EventStore.Core.Services.Storage.ReaderIndex
                             Debugger.Break();
                         else
                             throw new Exception(
-                                    string.Format("Trying to add duplicate event #{0} to stream {1}\nCommit: {3}\n"
+                                    string.Format("Trying to add duplicate event #{0} to stream {1} (hash {2})\nCommit: {3}\n"
                                                   + "Prepare: {4}\nIndexed prepare: {5}.",
-                                                  indexEntry.Version, prepare.EventStreamId, commit, prepare, indexedPrepare));
+                                                  indexEntry.Version, prepare.EventStreamId, streamHash, commit, prepare, indexedPrepare));
                     }
                 }
             }

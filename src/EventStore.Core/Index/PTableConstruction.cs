@@ -232,16 +232,13 @@ namespace EventStore.Core.Index
 
         private static void AppendRecordToForDump(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
         {
-            // Console.WriteLine("Writing to PTable (agnostic): {0}", entry);
             if (version == PTableVersions.Index32Bit){
                 var entry32 = new IndexEntry32((uint)entry.Stream, entry.Version, entry.Position);
-                // Console.WriteLine("Writing to PTable (32bit): {0}", entry32);
                 Marshal.Copy((IntPtr)entry32.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
             else {
                 var entry64 = new IndexEntry64(entry.Stream, entry.Version, entry.Position);
-                // Console.WriteLine("Writing to PTable (64bit): {0}", entry64);
                 Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
@@ -249,26 +246,16 @@ namespace EventStore.Core.Index
 
         private static void AppendRecordToForMerge(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
         {
-            // Console.WriteLine("Writing to PTable (agnostic): {0}", entry);
             if (version == PTableVersions.Index32Bit){
                 var entry32 = new IndexEntry32(entry.Key, entry.Position);
-                // Console.WriteLine("Writing to PTable (32bit): {0}", entry32);
                 Marshal.Copy((IntPtr)entry32.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
             else {
                 var entry64 = new IndexEntry64(entry.Key, entry.Position);
-                // Console.WriteLine("Writing to PTable (64bit): {0}", entry64);
                 Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
         }
-/*
-        private static void AppendRecordTo(BinaryWriter writer, IndexEntry indexEntry)
-        {
-            writer.Write(indexEntry.Key);
-            writer.Write(indexEntry.Position);
-        }
-*/
     }
 }

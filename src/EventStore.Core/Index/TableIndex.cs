@@ -42,9 +42,6 @@ namespace EventStore.Core.Index
         private long _commitCheckpoint = -1;
         private long _prepareCheckpoint = -1;
 
-        private IHasher _lowHasher;
-        private IHasher _highHasher;
-
         private volatile bool _backgroundRunning;
         private readonly ManualResetEventSlim _backgroundRunningEvent = new ManualResetEventSlim(true);
 
@@ -78,9 +75,6 @@ namespace EventStore.Core.Index
             _indexCacheDepth = indexCacheDepth;
             _ptableVersion = ptableVersion;
             _awaitingMemTables = new List<TableItem> { new TableItem(_memTableFactory(), -1, -1) };
-
-            _lowHasher = new XXHashUnsafe();
-            _highHasher = new Murmur3AUnsafe();
         }
 
         public void Initialize(long chaserCheckpoint)
@@ -177,26 +171,23 @@ namespace EventStore.Core.Index
                 Directory.CreateDirectory(directory);
         }
 
-        public void Add(long commitPos, string streamId, int version, long position)
+        public void Add(long commitPos, ulong stream, int version, long position)
         {
             Ensure.Nonnegative(commitPos, "commitPos");
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
             //TODO pieterg review the interface doesn't feel right
-            AddEntries(commitPos, new[] { new IndexEntryFoo(streamId, version, position) });
+            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
         }
 
-        public void AddEntries(long commitPos, IList<IndexEntryFoo> idxEntries)
+        public void AddEntries(long commitPos, IList<IndexEntry> entries)
         {
             //Ensure.Nonnegative(commitPos, "commitPos");
             //Ensure.NotNull(entries, "entries");
             //Ensure.Positive(entries.Count, "entries.Count");
 
             //should only be called on a single thread.
-            //TODO pieterg review the interface doesn't feel right
-            ulong stream = Hash(idxEntries[0].StreamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
-            var entries = idxEntries.Select<IndexEntryFoo, IndexEntry>(x => new IndexEntry(stream, x.Version, x.Position)).ToList();
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
 
             table.AddEntries(entries);
@@ -335,10 +326,9 @@ namespace EventStore.Core.Index
             }
         }
 
-        public bool TryGetOneValue(string streamId, int version, out long position)
+        public bool TryGetOneValue(ulong stream, int version, out long position)
         {
             //TODO pieterg review (should we hash here?)
-            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             int counter = 0;
             while (counter < 5)
             {
@@ -378,10 +368,8 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetLatestEntry(string streamId, out IndexEntry entry)
+        public bool TryGetLatestEntry(ulong stream, out IndexEntry entry)
         {
-            //TODO pieterg review (should we hash here?)
-            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
@@ -418,10 +406,9 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public bool TryGetOldestEntry(string streamId, out IndexEntry entry)
+        public bool TryGetOldestEntry(ulong stream, out IndexEntry entry)
         {
             //TODO pieterg review (should we hash here?)
-            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
@@ -458,10 +445,9 @@ namespace EventStore.Core.Index
             return false;
         }
 
-        public IEnumerable<IndexEntry> GetRange(string streamId, int startVersion, int endVersion, int? limit = null)
+        public IEnumerable<IndexEntry> GetRange(ulong stream, int startVersion, int endVersion, int? limit = null)
         {
             //TODO pieterg review (should we hash here?)
-            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
             var counter = 0;
             while (counter < 5)
             {
