@@ -46,13 +46,7 @@ namespace EventStore.Core.Index
                     foreach (var record in table.IterateAllInOrder())
                     {
                         var rec = record;
-                        if (version == PTableVersions.Index32Bit){
-                            var entry32Bit = new IndexEntry32((uint)rec.Stream, rec.Version, rec.Position);
-                            AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
-                        }else {
-                            var entry64Bit = new IndexEntry64(rec.Stream, rec.Version, rec.Position);
-                            AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
-                        }
+                        AppendRecordToForDump(bs, buffer, version, rec, indexEntrySize);
                     }
                     bs.Flush();
                     cs.FlushFinalBlock();
@@ -75,7 +69,7 @@ namespace EventStore.Core.Index
             //TODO pieterg - fix this
             var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
 
-            var fileSize = GetFileSize(tables); // approximate file size
+            var fileSize = GetFileSize(tables, indexEntrySize); // approximate file size
             if (tables.Count == 2)
                 return MergeTo2(tables, fileSize, outputFile, recordExistsAt, version, cacheDepth); // special case
 
@@ -116,13 +110,7 @@ namespace EventStore.Core.Index
                         var current = enumerators[idx].Current;
                         if (recordExistsAt(current))
                         {
-                            if (version == PTableVersions.Index32Bit){
-                                var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
-                            }else {
-                                var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
-                            }
+                            AppendRecordToForMerge(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
                         if (!enumerators[idx].MoveNext())
@@ -193,15 +181,10 @@ namespace EventStore.Core.Index
                             available2 = enum2.MoveNext();
                         }
 
+                        Console.WriteLine("Check existence of record ({0}bit) : {1}", version == PTableVersions.Index32Bit ? 32 : 64, current.ToString());
                         if (recordExistsAt(current))
                         {
-                            if (version == PTableVersions.Index32Bit){
-                                var entry32Bit = new IndexEntry32((uint)current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry32Bit.Bytes, buffer, indexEntrySize);
-                            }else {
-                                var entry64Bit = new IndexEntry64(current.Stream, current.Version, current.Position);
-                                AppendRecordTo(bs, entry64Bit.Bytes, buffer, indexEntrySize);
-                            }
+                            AppendRecordToForMerge(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
                     }
@@ -221,14 +204,14 @@ namespace EventStore.Core.Index
             return new PTable(outputFile, Guid.NewGuid(), version, depth: cacheDepth);
         }
 
-        private static long GetFileSize(IList<PTable> tables)
+        private static long GetFileSize(IList<PTable> tables, int indexEntrySize)
         {
             long count = 0;
             for (int i = 0; i < tables.Count; ++i)
             {
                 count += tables[i].Count;
             }
-            return PTableHeader.Size + IndexEntry32Size * count + MD5Size;
+            return PTableHeader.Size + indexEntrySize * count + MD5Size;
         }
 
         private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
@@ -248,12 +231,39 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-        private static void AppendRecordTo(Stream stream, byte* bytes, byte[] buffer, int indexEntrySize)
+        private static void AppendRecordToForDump(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
         {
-            Marshal.Copy((IntPtr)bytes, buffer, 0, indexEntrySize);
-            stream.Write(buffer, 0, indexEntrySize);
+            Console.WriteLine("Writing to PTable (agnostic): {0}", entry);
+            if (version == PTableVersions.Index32Bit){
+                var entry32 = new IndexEntry32((uint)entry.Stream, entry.Version, entry.Position);
+                Console.WriteLine("Writing to PTable (32bit): {0}", entry32);
+                Marshal.Copy((IntPtr)entry32.Bytes, buffer, 0, indexEntrySize);
+                stream.Write(buffer, 0, indexEntrySize);
+            }
+            else {
+                var entry64 = new IndexEntry64(entry.Stream, entry.Version, entry.Position);
+                Console.WriteLine("Writing to PTable (64bit): {0}", entry64);
+                Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
+                stream.Write(buffer, 0, indexEntrySize);
+            }
         }
 
+        private static void AppendRecordToForMerge(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
+        {
+            Console.WriteLine("Writing to PTable (agnostic): {0}", entry);
+            if (version == PTableVersions.Index32Bit){
+                var entry32 = new IndexEntry32(entry.Key, entry.Position);
+                Console.WriteLine("Writing to PTable (32bit): {0}", entry32);
+                Marshal.Copy((IntPtr)entry32.Bytes, buffer, 0, indexEntrySize);
+                stream.Write(buffer, 0, indexEntrySize);
+            }
+            else {
+                var entry64 = new IndexEntry64(entry.Key, entry.Position);
+                Console.WriteLine("Writing to PTable (64bit): {0}", entry64);
+                Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
+                stream.Write(buffer, 0, indexEntrySize);
+            }
+        }
 /*
         private static void AppendRecordTo(BinaryWriter writer, IndexEntry indexEntry)
         {

@@ -183,9 +183,8 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
-            //TODO pieterg review (should we hash here?)
-            ulong stream = Hash(streamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
-            AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
+            //TODO pieterg review the interface doesn't feel right
+            AddEntries(commitPos, new[] { new IndexEntry(streamId, version, position) });
         }
 
         public void AddEntries(long commitPos, IList<IndexEntry> entries)
@@ -195,10 +194,9 @@ namespace EventStore.Core.Index
             //Ensure.Positive(entries.Count, "entries.Count");
 
             //should only be called on a single thread.
-            //TODO pieterg review (should we hash here?)
+            //TODO pieterg review the interface doesn't feel right
             ulong stream = Hash(entries[0].StreamId, _lowHasher, _highHasher, _ptableVersion == PTableVersions.Index64Bit);
-            entries = entries.Select<IndexEntry, IndexEntry>( x => new IndexEntry(stream, x.Version, x.Position)).ToList();
-            
+            entries = entries.Select(x => new IndexEntry(stream, x.Version, x.Position)).ToList();
             var table = (IMemTable)_awaitingMemTables[0].Table; // always a memtable
 
             table.AddEntries(entries);

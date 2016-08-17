@@ -16,6 +16,14 @@ namespace EventStore.Core.Index
             Position = position;
         }
 
+        public IndexEntry(ulong key, ulong stream, int version, long position) : this()
+        {
+            Key = key;
+            Stream = stream;
+            Version = version;
+            Position = position;
+        }
+
         public IndexEntry(ulong stream, int version, long position) : this()
         {
             Stream = stream;
