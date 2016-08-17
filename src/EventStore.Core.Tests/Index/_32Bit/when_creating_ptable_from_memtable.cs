@@ -48,6 +48,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void the_file_gets_created()
         {
+            var indexEntrySize = ptableVersion == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : PTable.IndexEntry64Size;
             var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
@@ -56,7 +57,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             using (var sstable = PTable.FromMemtable(table, Filename, ptableVersion))
             {
                 var fileinfo = new FileInfo(Filename);
-                Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*16, fileinfo.Length);
+                Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*indexEntrySize, fileinfo.Length);
                 var items = sstable.IterateAllInOrder().ToList();
                 Assert.AreEqual(0x0105, items[0].Stream);
                 Assert.AreEqual(0x0001, items[0].Version);

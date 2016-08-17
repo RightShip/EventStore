@@ -328,7 +328,6 @@ namespace EventStore.Core.Index
 
         public bool TryGetOneValue(ulong stream, int version, out long position)
         {
-            //TODO pieterg review (should we hash here?)
             int counter = 0;
             while (counter < 5)
             {

@@ -238,7 +238,7 @@ namespace EventStore.Core.Index
                 stream.Write(buffer, 0, indexEntrySize);
             }
             else {
-                var entry64 = new IndexEntry64(entry.Stream, entry.Version, entry.Position);
+                var entry64 = new IndexEntry(entry.Stream, entry.Version, entry.Position);
                 Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
@@ -252,7 +252,7 @@ namespace EventStore.Core.Index
                 stream.Write(buffer, 0, indexEntrySize);
             }
             else {
-                var entry64 = new IndexEntry64(entry.Key, entry.Position);
+                var entry64 = new IndexEntry(entry.Key, entry.Position);
                 Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }

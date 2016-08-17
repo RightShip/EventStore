@@ -164,7 +164,6 @@ namespace EventStore.Core.Index
                 {
                     var x = list.Keys[i];
                     var entry = new IndexEntry(key, x.EvNum, x.LogPos);
-                    Console.WriteLine("MemTable::Order: {0} - {1}", i, entry);
                     yield return entry;
                 }
             }
