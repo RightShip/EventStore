@@ -282,7 +282,9 @@ namespace EventStore.Core.Index
                 workItem.Stream.Position = PTableHeader.Size;
                 for (long i = 0, n = Count; i < n; i++)
                 {
-                    yield return ReadNextNoSeek(workItem, _version);
+                    var entry = ReadNextNoSeek(workItem, _version);
+                    Console.WriteLine("PTable::Order: {0} - {1}", i, entry);
+                    yield return entry;
                 }
             }
             finally
@@ -512,12 +514,12 @@ namespace EventStore.Core.Index
             IndexEntry entry;
             if(ptableVersion == PTableVersions.Index32Bit){
                 var entry32 = new IndexEntry32(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
-                entry = new IndexEntry(entry32.Key, entry32.Stream, entry32.Version, entry32.Position);
+                entry = new IndexEntry(entry32.Key, entry32.Position);
             }else{
                 var entry64 = new IndexEntry64((ulong)workItem.Reader.ReadInt32() | workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
-                entry = new IndexEntry(entry64.Key, entry64.Stream, entry64.Version, entry64.Position);
+                entry = new IndexEntry(entry64.Key, entry64.Position);
             }
-            Console.WriteLine("Read from PTable ({0}bit): {1}", ptableVersion == PTableVersions.Index32Bit ? 32 : 64, entry);
+            // Console.WriteLine("Read from PTable ({0}bit): {1}", ptableVersion == PTableVersions.Index32Bit ? 32 : 64, entry);
             return entry;
         }
 

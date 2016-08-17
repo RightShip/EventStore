@@ -163,7 +163,9 @@ namespace EventStore.Core.Index
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     var x = list.Keys[i];
-                    yield return new IndexEntry(key, x.EvNum, x.LogPos);
+                    var entry = new IndexEntry(key, x.EvNum, x.LogPos);
+                    Console.WriteLine("MemTable::Order: {0} - {1}", i, entry);
+                    yield return entry;
                 }
             }
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");

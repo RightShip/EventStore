@@ -1,39 +1,25 @@
 using System;
+using System.Runtime.InteropServices;
 
 namespace EventStore.Core.Index
 {
-    public struct IndexEntry: IComparable<IndexEntry>, IEquatable<IndexEntry>
+    [StructLayout(LayoutKind.Explicit)]
+    public unsafe struct IndexEntry: IComparable<IndexEntry>, IEquatable<IndexEntry>
     {
-        public UInt64 Key;
-        public string StreamId;
-        public byte[] Bytes;
-        public Int32 Version;
-        public UInt64 Stream;
-        public Int64 Position;
+        [FieldOffset(0)] public UInt64 Key;
+        [FieldOffset(0)] public fixed byte Bytes [16];
+        [FieldOffset(0)] public Int32 Version;
+        [FieldOffset(4)] public UInt32 Stream;
+        [FieldOffset(8)] public Int64 Position;
         public IndexEntry(ulong key, long position) : this()
         {
             Key = key;
             Position = position;
         }
 
-        public IndexEntry(ulong key, ulong stream, int version, long position) : this()
-        {
-            Key = key;
-            Stream = stream;
-            Version = version;
-            Position = position;
-        }
-
         public IndexEntry(ulong stream, int version, long position) : this()
         {
-            Stream = stream;
-            Version = version;
-            Position = position;
-        }
-
-        public IndexEntry(string streamid, int version, long position) : this()
-        {
-            StreamId = streamid;
+            Stream = (uint)stream;
             Version = version;
             Position = position;
         }
@@ -47,6 +33,60 @@ namespace EventStore.Core.Index
         }
 
         public bool Equals(IndexEntry other)
+        {
+            return Key == other.Key && Position == other.Position;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Key: {0}, Stream: {1}, Version: {2}, Position: {3}", Key, Stream, Version, Position);
+        }
+    }
+    public struct IndexEntryFoo: IComparable<IndexEntryFoo>, IEquatable<IndexEntryFoo>
+    {
+        public UInt64 Key;
+        public string StreamId;
+        public byte[] Bytes;
+        public Int32 Version;
+        public UInt64 Stream;
+        public Int64 Position;
+        public IndexEntryFoo(ulong key, long position) : this()
+        {
+            Key = key;
+            Position = position;
+        }
+
+        public IndexEntryFoo(ulong key, ulong stream, int version, long position) : this()
+        {
+            Key = key;
+            Stream = stream;
+            Version = version;
+            Position = position;
+        }
+
+        public IndexEntryFoo(ulong stream, int version, long position) : this()
+        {
+            Stream = stream;
+            Version = version;
+            Position = position;
+        }
+
+        public IndexEntryFoo(string streamid, int version, long position) : this()
+        {
+            StreamId = streamid;
+            Version = version;
+            Position = position;
+        }
+
+        public int CompareTo(IndexEntryFoo other)
+        {
+            var keyCmp = Key.CompareTo(other.Key);
+            if (keyCmp != 0)
+                return keyCmp;
+            return Position.CompareTo(other.Position);
+        }
+
+        public bool Equals(IndexEntryFoo other)
         {
             return Key == other.Key && Position == other.Position;
         }
