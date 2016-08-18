@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public table_index_on_range_query()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

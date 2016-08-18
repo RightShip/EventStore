@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public create_index_map_from_non_existing_file()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

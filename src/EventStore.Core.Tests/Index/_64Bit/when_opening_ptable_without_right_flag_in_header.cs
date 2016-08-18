@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public when_opening_ptable_without_right_flag_in_header()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

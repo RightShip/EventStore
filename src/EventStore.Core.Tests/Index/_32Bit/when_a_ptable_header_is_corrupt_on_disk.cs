@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private string _filename;
         private PTable _table;
         private string _copiedfilename;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         [SetUp]
         public void Setup()
         {
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             var mtable = new HashListMemTable(maxSize: 10);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
-            _table = PTable.FromMemtable(mtable, _filename, ptableVersion);
+            _table = PTable.FromMemtable(mtable, _filename, _ptableVersion);
             _table.Dispose();
             File.Copy(_filename, _copiedfilename);
             using (var f = new FileStream(_copiedfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
@@ -35,7 +35,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void the_hash_is_invalid()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, ptableVersion, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => _table = PTable.FromFile(_copiedfilename, _ptableVersion, 16));
             Assert.IsInstanceOf<HashValidationException>(exc.InnerException);
         }
 

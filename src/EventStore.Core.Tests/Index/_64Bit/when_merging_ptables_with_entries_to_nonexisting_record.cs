@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public when_merging_ptables_with_entries_to_nonexisting_record()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

@@ -30,7 +30,7 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         private DbResult _dbResult;
         private LogRecord[][] _keptRecords;
         private bool _checked;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         protected virtual bool UnsafeIgnoreHardDelete() {
             return false;
@@ -68,10 +68,10 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             var tableIndex = new TableIndex(indexPath,
                                             () => new HashListMemTable(maxSize: 200),
                                             () => new TFReaderLease(readerPool),
-                                            ptableVersion,
+                                            _ptableVersion,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
-            var hasher = new XXHashUnsafe();
+            var hasher = new CombinedHasher(new XXHashUnsafe(), new Murmur3AUnsafe(), _ptableVersion == PTableVersions.Index64Bit);
             ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, hasher, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 

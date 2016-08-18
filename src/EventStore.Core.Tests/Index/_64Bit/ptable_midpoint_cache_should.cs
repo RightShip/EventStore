@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public ptable_midpoint_cache_should()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

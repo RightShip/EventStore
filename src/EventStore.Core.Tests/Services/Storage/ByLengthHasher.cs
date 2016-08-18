@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Services.Storage
 
         public ulong CombinedHash(string s)
         {
-            throw new NotImplementedException();
+            return (ulong)s.Length;
         }
     }
 }

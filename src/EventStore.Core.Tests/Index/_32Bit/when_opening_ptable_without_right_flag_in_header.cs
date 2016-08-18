@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     [TestFixture]
     public class when_opening_ptable_without_right_flag_in_header: SpecificationWithFile
     {
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         [SetUp]
         public override void SetUp()
         {
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void the_invalid_file_exception_is_thrown()
         {
-            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, ptableVersion, 16));
+            var exc = Assert.Throws<CorruptIndexException>(() => PTable.FromFile(Filename, _ptableVersion, 16));
             Assert.IsInstanceOf<InvalidFileException>(exc.InnerException);
         }
     }

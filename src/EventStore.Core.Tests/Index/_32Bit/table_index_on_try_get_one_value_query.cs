@@ -11,7 +11,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     {
         private TableIndex _tableIndex;
         private string _indexDir;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -23,7 +23,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             _tableIndex = new TableIndex(_indexDir,
                                          () => new HashListMemTable(maxSize: 10),
                                          () => fakeReader,
-                                         ptableVersion,
+                                         _ptableVersion,
                                          maxSizeForMemory: 5);
             _tableIndex.Initialize(long.MaxValue);
 

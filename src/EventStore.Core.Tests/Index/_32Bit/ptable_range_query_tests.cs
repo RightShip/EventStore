@@ -7,7 +7,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     [TestFixture]
     public class ptable_range_query_tests: SpecificationWithFilePerTestFixture
     {
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         private PTable _ptable;
 
         public override void TestFixtureSetUp()
@@ -22,7 +22,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             table.Add(0x0103, 0x0001, 0xFFF1);
             table.Add(0x0103, 0x0003, 0xFFF3);
             table.Add(0x0103, 0x0005, 0xFFF5);
-            _ptable = PTable.FromMemtable(table, Filename, ptableVersion, cacheDepth: 0);
+            _ptable = PTable.FromMemtable(table, Filename, _ptableVersion, cacheDepth: 0);
         }
 
         public override void TestFixtureTearDown()

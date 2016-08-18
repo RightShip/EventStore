@@ -9,7 +9,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     public class table_index_on_range_query  :SpecificationWithDirectoryPerTestFixture
     {
         private TableIndex _tableIndex;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -19,7 +19,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             _tableIndex = new TableIndex(PathName,
                                          () => new HashListMemTable(maxSize: 40),
                                          () => { throw new InvalidOperationException(); },
-                                         ptableVersion,
+                                         _ptableVersion,
                                          maxSizeForMemory: 20);
             _tableIndex.Initialize(long.MaxValue);
 

@@ -264,7 +264,7 @@
     <Compile Include="Http\TestSuiteMarkerBase.cs" />
     <Compile Include="Http\Users\StreamHelpers.cs" />
     <Compile Include="Http\Users\users.cs" />
-    <Compile Include="Index\_32Bit\MemTableTests.cs" />
+    <Compile Include="Index\MemTableTests.cs" />
     <Compile Include="Index\_64Bit\adding_four_items_to_empty_index_map_with_four_tables_per_level_causes_merge.cs" />
     <Compile Include="Index\_64Bit\adding_four_items_to_empty_index_map_with_two_tables_per_level_causes_double_merge.cs" />
     <Compile Include="Index\_64Bit\adding_item_to_empty_index_map.cs" />

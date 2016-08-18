@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     [TestFixture]
     public class ptable_should: SpecificationWithFilePerTestFixture
     {
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         private PTable _ptable;
 
         public override void TestFixtureSetUp()
@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Index._32Bit
 
             var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
-            _ptable = PTable.FromMemtable(table, Filename, ptableVersion, cacheDepth: 0);
+            _ptable = PTable.FromMemtable(table, Filename, _ptableVersion, cacheDepth: 0);
         }
 
         public override void TestFixtureTearDown()

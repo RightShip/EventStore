@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private IndexMap _map;
         private string _finalmergefile;
         private string _finalmergefile2;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         private MergeResult _result;
 
@@ -25,41 +25,41 @@ namespace EventStore.Core.Tests.Index._32Bit
             _finalmergefile = GetTempFilePath();
             _finalmergefile2 = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, ptableVersion);
+            _map = IndexMap.FromFile(_filename, _ptableVersion);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 1, 0);
             var guidFilename = new GuidFilenameProvider(PathName);
-            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 0, 0, _ => true, guidFilename, ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 0, 0, _ => true, guidFilename, _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion), 1, 2, _ => true, new FakeFilenameProvider(_finalmergefile, _finalmergefile2), ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion), 1, 2, _ => true, new FakeFilenameProvider(_finalmergefile, _finalmergefile2), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

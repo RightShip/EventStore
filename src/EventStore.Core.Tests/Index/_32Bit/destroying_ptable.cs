@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     public class destroying_ptable: SpecificationWithFile
     {
         private PTable _table;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [SetUp]
         public void Setup()
@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             var mtable = new HashListMemTable(maxSize: 10);
             mtable.Add(0x0101, 0x0001, 0x0001);
             mtable.Add(0x0105, 0x0001, 0x0002);
-            _table = PTable.FromMemtable(mtable, Filename, ptableVersion);
+            _table = PTable.FromMemtable(mtable, Filename, _ptableVersion);
             _table.MarkForDestruction();
         }
 

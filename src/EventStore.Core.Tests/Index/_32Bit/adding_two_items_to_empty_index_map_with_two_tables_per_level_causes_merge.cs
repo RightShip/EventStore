@@ -12,7 +12,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private IndexMap _map;
         private string _mergeFile;
         private MergeResult _result;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -22,15 +22,15 @@ namespace EventStore.Core.Tests.Index._32Bit
             _filename = GetTempFilePath();
             _mergeFile = GetTempFilePath();
 
-            _map = IndexMap.FromFile(_filename, ptableVersion, maxTablesPerLevel: 2);
+            _map = IndexMap.FromFile(_filename, _ptableVersion, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 1, 0);
 
-            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion),
-                                     123, 321, _ => true, new GuidFilenameProvider(PathName), ptableVersion);
+            _result = _map.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion),
+                                     123, 321, _ => true, new GuidFilenameProvider(PathName), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
-            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), ptableVersion),
-                                                  100, 400, _ => true, new FakeFilenameProvider(_mergeFile), ptableVersion);
+            _result = _result.MergedMap.AddPTable(PTable.FromMemtable(memtable, GetTempFilePath(), _ptableVersion),
+                                                  100, 400, _ => true, new FakeFilenameProvider(_mergeFile), _ptableVersion);
             _result.ToDelete.ForEach(x => x.MarkForDestruction());
         }
 

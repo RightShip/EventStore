@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     public class ptable_midpoint_cache_should: SpecificationWithDirectory
     {
         private static readonly ILogger Log = LogManager.GetLoggerFor<ptable_midpoint_cache_should>();
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [Test, Category("LongRunning"), Ignore("Veerrrryyy long running :)")]
         public void construct_valid_cache_for_any_combination_of_params()
@@ -43,7 +43,7 @@ namespace EventStore.Core.Tests.Index._32Bit
                 memTable.Add((uint)rnd.Next(), rnd.Next(0, 1<<20), Math.Abs(rnd.Next() * rnd.Next()));
             }
 
-            var ptable = PTable.FromMemtable(memTable, file, ptableVersion, 0);
+            var ptable = PTable.FromMemtable(memTable, file, _ptableVersion, 0);
             return ptable;
         }
 

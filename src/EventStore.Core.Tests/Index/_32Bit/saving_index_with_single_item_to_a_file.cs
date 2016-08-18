@@ -15,7 +15,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private string _tablename;
         private string _mergeFile;
         private MergeResult _result;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [TestFixtureSetUp]
         public override void TestFixtureSetUp()
@@ -26,11 +26,11 @@ namespace EventStore.Core.Tests.Index._32Bit
             _tablename = GetTempFilePath();
             _mergeFile = GetFilePathFor("outputfile");
 
-            _map = IndexMap.FromFile(_filename, ptableVersion);
+            _map = IndexMap.FromFile(_filename, _ptableVersion);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0, 2, 7);
-            var table = PTable.FromMemtable(memtable, _tablename, ptableVersion);
-            _result = _map.AddPTable(table, 7, 11, _ => true, new FakeFilenameProvider(_mergeFile), ptableVersion);
+            var table = PTable.FromMemtable(memtable, _tablename, _ptableVersion);
+            _result = _map.AddPTable(table, 7, 11, _ => true, new FakeFilenameProvider(_mergeFile), _ptableVersion);
             _result.MergedMap.SaveToFile(_filename);
             _result.ToDelete.ForEach(x => x.Dispose());
             _result.MergedMap.InOrder().ToList().ForEach(x => x.Dispose());
@@ -67,7 +67,7 @@ namespace EventStore.Core.Tests.Index._32Bit
 
                 Assert.AreEqual(5, lines.Count());
                 Assert.AreEqual(md5String, lines[0]);
-                Assert.AreEqual(ptableVersion.ToString(), lines[1]);
+                Assert.AreEqual(_ptableVersion.ToString(), lines[1]);
                 Assert.AreEqual("7/11", lines[2]);
                 Assert.AreEqual("0,0," + Path.GetFileName(_tablename), lines[3]);
                 Assert.AreEqual("", lines[4]);
@@ -77,7 +77,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void saved_file_could_be_read_correctly_and_without_errors()
         {
-            var map = IndexMap.FromFile(_filename, ptableVersion);
+            var map = IndexMap.FromFile(_filename, _ptableVersion);
             map.InOrder().ToList().ForEach(x => x.Dispose());
 
             Assert.AreEqual(7, map.PrepareCheckpoint);

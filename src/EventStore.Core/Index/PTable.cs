@@ -13,10 +13,11 @@ using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
 using EventStore.Core.Util;
 using EventStore.Core.TransactionLog.Unbuffered;
+using System.Linq;
 
 namespace EventStore.Core.Index
 {
-    public enum FileType: byte
+    public enum FileType : byte
     {
         PTableFile = 1,
         ChunkFile = 2
@@ -32,6 +33,8 @@ namespace EventStore.Core.Index
     {
         public const int IndexEntry32Size = sizeof(int) + sizeof(int) + sizeof(long);
         public const int IndexEntry64Size = sizeof(int) + sizeof(long) + sizeof(long);
+        public const int IndexKey32Size = sizeof(int) + sizeof(int);
+        public const int IndexKey64Size = sizeof(int) + sizeof(long);
         public const int MD5Size = 16;
         public const int DefaultBufferSize = 8192;
         public const int DefaultSequentialBufferSize = 65536;
@@ -59,7 +62,7 @@ namespace EventStore.Core.Index
         private readonly ManualResetEventSlim _destroyEvent = new ManualResetEventSlim(false);
         private volatile bool _deleteFile;
 
-        internal Midpoint[] GetMidPoints() {return _midpoints;}
+        internal Midpoint[] GetMidPoints() { return _midpoints; }
 
         private PTable(string filename,
                        Guid id,
@@ -83,12 +86,12 @@ namespace EventStore.Core.Index
             if (_version == PTableVersions.Index32Bit)
             {
                 _indexEntrySize = IndexEntry32Size;
-                _indexKeySize = 8;
+                _indexKeySize = IndexKey32Size;
             }
-            if(_version == PTableVersions.Index64Bit)
+            if (_version == PTableVersions.Index64Bit)
             {
                 _indexEntrySize = IndexEntry64Size;
-                _indexKeySize = 12;
+                _indexKeySize = IndexKey64Size;
             }
 
             Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
@@ -150,10 +153,13 @@ namespace EventStore.Core.Index
                       Path.GetFileName(Filename), Count, calcdepth, sw.Elapsed);
         }
 
-        private int GetDepth(long fileSize, int minDepth) {
-            if((2L << 28) * 4096L < fileSize) return 28;
-            for(int i=27;i>minDepth;i--) {
-                if((2L << i) * 4096L < fileSize) {
+        private int GetDepth(long fileSize, int minDepth)
+        {
+            if ((2L << 28) * 4096L < fileSize) return 28;
+            for (int i = 27; i > minDepth; i--)
+            {
+                if ((2L << i) * 4096L < fileSize)
+                {
                     return i + 1;
                 }
             }
@@ -176,7 +182,8 @@ namespace EventStore.Core.Index
             using (var stream = UnbufferedFileStream.Create(_filename, FileMode.Open, FileAccess.Read, FileShare.Read, false, 4096, 4096, false, 4096))
             {
 #endif
-                try {
+                try
+                {
                     int midpointsCount;
                     Midpoint[] midpoints;
                     using (MD5 md5 = MD5.Create())
@@ -198,21 +205,26 @@ namespace EventStore.Core.Index
                         for (long k = 0; k < midpointsCount; ++k)
                         {
                             var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
-                            if (previousNextIndex != nextIndex) {
+                            if (previousNextIndex != nextIndex)
+                            {
                                 ReadUntilWithMd5(PTableHeader.Size + IndexEntrySize * nextIndex, stream, md5);
                                 stream.Read(buffer, 0, IndexKeySize);
                                 md5.TransformBlock(buffer, 0, IndexKeySize, null, 0);
                                 IndexKey key;
-                                if (_version == PTableVersions.Index32Bit){
+                                if (_version == PTableVersions.Index32Bit)
+                                {
                                     key = new IndexKey(BitConverter.ToUInt32(buffer, 4), BitConverter.ToInt32(buffer, 0));
                                 }
-                                else {
+                                else
+                                {
                                     key = new IndexKey(BitConverter.ToUInt64(buffer, 4), BitConverter.ToInt32(buffer, 0));
                                 }
                                 midpoints[k] = new Midpoint(key, nextIndex);
                                 previousNextIndex = nextIndex;
                                 previousKey = key;
-                            } else {
+                            }
+                            else
+                            {
                                 midpoints[k] = new Midpoint(previousKey, previousNextIndex);
                             }
                         }
@@ -254,7 +266,7 @@ namespace EventStore.Core.Index
                 toRead -= read;
             }
         }
-        void ValidateHash(byte [] fromFile, byte[] computed)
+        void ValidateHash(byte[] fromFile, byte[] computed)
         {
             if (computed == null)
                 throw new CorruptIndexException(new HashValidationException("Calculated MD5 hash is null!"));
@@ -291,8 +303,7 @@ namespace EventStore.Core.Index
                 workItem.Stream.Position = PTableHeader.Size;
                 for (long i = 0, n = Count; i < n; i++)
                 {
-                    var entry = ReadNextNoSeek(workItem, _version);
-                    yield return entry;
+                    yield return ReadNextNoSeek(workItem, _version);
                 }
             }
             finally
@@ -447,7 +458,7 @@ namespace EventStore.Core.Index
                 }
 
                 PositionAtEntry(IndexEntrySize, high, workItem);
-                for (long i=high, n=Count; i<n; ++i)
+                for (long i = high, n = Count; i < n; ++i)
                 {
                     IndexEntry entry = ReadNextNoSeek(workItem, _version);
                     var candidateKey = new IndexKey(entry.Stream, entry.Version);
@@ -475,7 +486,7 @@ namespace EventStore.Core.Index
         {
             var midpoints = _midpoints;
             if (midpoints == null)
-                return new Range(0, Count-1);
+                return new Range(0, Count - 1);
             long lowerMidpoint = LowerMidpointBound(midpoints, key);
             long upperMidpoint = UpperMidpointBound(midpoints, key);
             return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
@@ -525,17 +536,10 @@ namespace EventStore.Core.Index
 
         private static IndexEntry ReadNextNoSeek(WorkItem workItem, int ptableVersion)
         {
-            IndexEntry entry;
-            if (ptableVersion == PTableVersions.Index32Bit){
-                entry = new IndexEntry(workItem.Reader.ReadUInt64(), workItem.Reader.ReadInt64());
-            }
-            else {
-                int version = workItem.Reader.ReadInt32();
-                ulong stream = workItem.Reader.ReadUInt64();
-                long position = workItem.Reader.ReadInt64();
-                entry = new IndexEntry(stream, version, position);
-            }
-            return entry;
+            int version = workItem.Reader.ReadInt32();
+            ulong stream = ptableVersion == PTableVersions.Index32Bit ? workItem.Reader.ReadUInt32() : workItem.Reader.ReadUInt64();
+            long position = workItem.Reader.ReadInt64();
+            return new IndexEntry(stream, version, position);
         }
 
         private WorkItem GetWorkItem()
@@ -607,21 +611,38 @@ namespace EventStore.Core.Index
         {
             public ulong Stream;
             public int Version;
-            public IndexKey(ulong stream, int version){
+            public IndexKey(ulong stream, int version)
+            {
                 Stream = stream;
                 Version = version;
             }
 
-            public bool GreaterThan(IndexKey other){
-                return Stream > other.Stream && other.Version > Version;
+            public bool GreaterThan(IndexKey other)
+            {
+                if(Stream == other.Stream)
+                {
+                    return Version > other.Version;
+                }
+                return Stream > other.Stream;
             }
 
-            public bool SmallerThan(IndexKey other){
-                return Stream < other.Stream && other.Version < Version;
+            public bool SmallerThan(IndexKey other)
+            {
+                if(Stream == other.Stream)
+                {
+                    return Version < other.Version;
+                }
+                return Stream < other.Stream;
+                //return GetNumber(Stream, Version) < GetNumber(other.Stream, other.Version);
             }
 
-            public bool SmallerEqualsThan(IndexKey other){
-                return Stream <= other.Stream && other.Version <= Version;
+            public bool SmallerEqualsThan(IndexKey other)
+            {
+                if(Stream == other.Stream)
+                {
+                    return Version <= other.Version;
+                }
+                return Stream <= other.Stream;
             }
 
             public override string ToString()
@@ -630,7 +651,7 @@ namespace EventStore.Core.Index
             }
         }
 
-        private class WorkItem: IDisposable
+        private class WorkItem : IDisposable
         {
             public readonly FileStream Stream;
             public readonly BinaryReader Reader;

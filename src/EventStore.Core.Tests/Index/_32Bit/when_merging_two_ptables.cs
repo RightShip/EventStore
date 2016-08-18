@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     [TestFixture]
     public class when_merging_two_ptables: SpecificationWithDirectoryPerTestFixture
     {
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         private readonly List<string> _files = new List<string>();
         private readonly List<PTable> _tables = new List<PTable>();
 
@@ -27,10 +27,10 @@ namespace EventStore.Core.Tests.Index._32Bit
                 {
                     table.Add((UInt32)j + 1, i + 1, i * j);
                 }
-                _tables.Add(PTable.FromMemtable(table, _files[i], ptableVersion));
+                _tables.Add(PTable.FromMemtable(table, _files[i], _ptableVersion));
             }
             _files.Add(GetTempFilePath());
-            _newtable = PTable.MergeTo(_tables, _files[2], x => true, ptableVersion);
+            _newtable = PTable.MergeTo(_tables, _files[2], x => true, _ptableVersion);
         }
 
         [TestFixtureTearDown]

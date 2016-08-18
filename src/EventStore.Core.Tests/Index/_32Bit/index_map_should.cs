@@ -16,7 +16,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private string _ptableFileName;
         private IndexMap _emptyIndexMap;
         private PTable _ptable;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [SetUp]
         public override void SetUp()
@@ -26,11 +26,11 @@ namespace EventStore.Core.Tests.Index._32Bit
             _indexMapFileName = GetFilePathFor("index.map");
             _ptableFileName = GetFilePathFor("ptable");
 
-            _emptyIndexMap = IndexMap.FromFile(_indexMapFileName, ptableVersion);
+            _emptyIndexMap = IndexMap.FromFile(_indexMapFileName, _ptableVersion);
 
             var memTable = new HashListMemTable(maxSize: 10);
             memTable.Add(0, 1, 2);
-            _ptable = PTable.FromMemtable(memTable, _ptableFileName, ptableVersion);
+            _ptable = PTable.FromMemtable(memTable, _ptableFileName, _ptableVersion);
         }
 
         [TearDown]
@@ -43,13 +43,13 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void not_allow_negative_prepare_checkpoint_when_adding_ptable()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0, _ => true, new GuidFilenameProvider(PathName), ptableVersion));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, -1, 0, _ => true, new GuidFilenameProvider(PathName), _ptableVersion));
         }
 
         [Test]
         public void not_allow_negative_commit_checkpoint_when_adding_ptable()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1, _ => true, new GuidFilenameProvider(PathName), ptableVersion));
+            Assert.Throws<ArgumentOutOfRangeException>(() => _emptyIndexMap.AddPTable(_ptable, 0, -1, _ => true, new GuidFilenameProvider(PathName), _ptableVersion));
         }
 
         [Test]

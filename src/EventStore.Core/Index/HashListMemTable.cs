@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using EventStore.Common.Utils;
 using EventStore.Core.Exceptions;
+using EventStore.Common.Log;
 
 namespace EventStore.Core.Index
 {
@@ -163,8 +164,7 @@ namespace EventStore.Core.Index
                 for (int i = list.Count - 1; i >= 0; --i)
                 {
                     var x = list.Keys[i];
-                    var entry = new IndexEntry(key, x.EvNum, x.LogPos);
-                    yield return entry;
+                    yield return new IndexEntry(key, x.EvNum, x.LogPos);
                 }
             }
             //Log.Trace("Sorting array in HashListMemTable.IterateAllInOrder... DONE!");

@@ -26,7 +26,13 @@ namespace EventStore.Core.Index
 
         public int CompareTo(IndexEntry other)
         {
-            var keyCmp = Key.CompareTo(other.Key);
+            var keyCmp = Stream.CompareTo(other.Stream);
+            if (keyCmp == 0)
+            {
+                keyCmp = Version.CompareTo(other.Version);
+                if (keyCmp != 0)
+                    return keyCmp;
+            }
             if (keyCmp != 0)
                 return keyCmp;
             return Position.CompareTo(other.Position);
@@ -34,7 +40,7 @@ namespace EventStore.Core.Index
 
         public bool Equals(IndexEntry other)
         {
-            return Key == other.Key && Position == other.Position;
+            return (Stream == other.Stream && Version == other.Version) && Position == other.Position;
         }
 
         public override string ToString()

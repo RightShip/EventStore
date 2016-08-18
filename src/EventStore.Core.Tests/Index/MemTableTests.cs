@@ -5,7 +5,7 @@ using EventStore.Common.Utils;
 using EventStore.Core.Index;
 using NUnit.Framework;
 
-namespace EventStore.Core.Tests.Index._32Bit
+namespace EventStore.Core.Tests.Index
 {
     [TestFixture]
     public class HashListMemTableTests : MemTableTestsFixture

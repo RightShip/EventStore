@@ -9,17 +9,17 @@ namespace EventStore.Core.Tests.Index._32Bit
     [TestFixture]
     public class when_creating_ptable_from_memtable: SpecificationWithFile
     {
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
         [Test]
         public void null_file_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(maxSize: 10), null, ptableVersion));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(new HashListMemTable(maxSize: 10), null, _ptableVersion));
         }
 
         [Test]
         public void null_memtable_throws_null_exception()
         {
-            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt", ptableVersion));
+            Assert.Throws<ArgumentNullException>(() => PTable.FromMemtable(null, "C:\\foo.txt", _ptableVersion));
         }
 
         [Test]
@@ -27,7 +27,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         {
             var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
-            var ptable = PTable.FromMemtable(table, Filename, ptableVersion);
+            var ptable = PTable.FromMemtable(table, Filename, _ptableVersion);
             Assert.Throws<TimeoutException>(() => ptable.WaitForDisposal(1));
 
             // tear down
@@ -48,13 +48,13 @@ namespace EventStore.Core.Tests.Index._32Bit
         [Test]
         public void the_file_gets_created()
         {
-            var indexEntrySize = ptableVersion == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : PTable.IndexEntry64Size;
+            var indexEntrySize = _ptableVersion == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : PTable.IndexEntry64Size;
             var table = new HashListMemTable(maxSize: 10);
             table.Add(0x0101, 0x0001, 0x0001);
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
             table.Add(0x0102, 0x0002, 0x0003);
-            using (var sstable = PTable.FromMemtable(table, Filename, ptableVersion))
+            using (var sstable = PTable.FromMemtable(table, Filename, _ptableVersion))
             {
                 var fileinfo = new FileInfo(Filename);
                 Assert.AreEqual(PTableHeader.Size + PTable.MD5Size + 4*indexEntrySize, fileinfo.Length);
@@ -78,7 +78,7 @@ namespace EventStore.Core.Tests.Index._32Bit
             table.Add(0x0105, 0x0001, 0x0002);
             table.Add(0x0102, 0x0001, 0x0003);
             table.Add(0x0102, 0x0002, 0x0003);
-            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename, ptableVersion)) {}});
+            Assert.DoesNotThrow(() => {using (var sstable = PTable.FromMemtable(table, Filename, _ptableVersion)) {}});
         }
     }
 }

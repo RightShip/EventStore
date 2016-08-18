@@ -6,7 +6,7 @@ namespace EventStore.Core.Tests.Index._32Bit
     public abstract class PTableReadScenario: SpecificationWithFile
     {
         private readonly int _midpointCacheDepth;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         protected PTable PTable;
 
@@ -24,7 +24,7 @@ namespace EventStore.Core.Tests.Index._32Bit
 
             AddItemsForScenario(table);
 
-            PTable = PTable.FromMemtable(table, Filename, ptableVersion, cacheDepth: _midpointCacheDepth);
+            PTable = PTable.FromMemtable(table, Filename, _ptableVersion, cacheDepth: _midpointCacheDepth);
         }
 
         [TearDown]

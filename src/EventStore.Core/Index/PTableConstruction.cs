@@ -46,7 +46,7 @@ namespace EventStore.Core.Index
                     foreach (var record in table.IterateAllInOrder())
                     {
                         var rec = record;
-                        AppendRecordToForDump(bs, buffer, version, rec, indexEntrySize);
+                        AppendRecordTo(bs, buffer, version, rec, indexEntrySize);
                     }
                     bs.Flush();
                     cs.FlushFinalBlock();
@@ -71,7 +71,7 @@ namespace EventStore.Core.Index
 
             var fileSize = GetFileSize(tables, indexEntrySize); // approximate file size
             if (tables.Count == 2)
-                return MergeTo2(tables, fileSize, outputFile, recordExistsAt, version, cacheDepth); // special case
+                return MergeTo2(tables, fileSize, indexEntrySize, outputFile, recordExistsAt, version, cacheDepth); // special case
 
             Log.Trace("PTables merge started.");
             var watch = Stopwatch.StartNew();
@@ -110,7 +110,7 @@ namespace EventStore.Core.Index
                         var current = enumerators[idx].Current;
                         if (recordExistsAt(current))
                         {
-                            AppendRecordToForMerge(bs, buffer, version, current, indexEntrySize);
+                            AppendRecordTo(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
                         if (!enumerators[idx].MoveNext())
@@ -136,12 +136,9 @@ namespace EventStore.Core.Index
             return new PTable(outputFile, Guid.NewGuid(), version, depth: cacheDepth);
         }
 
-        private static PTable MergeTo2(IList<PTable> tables, long fileSize, string outputFile,
+        private static PTable MergeTo2(IList<PTable> tables, long fileSize, int indexEntrySize, string outputFile,
                                        Func<IndexEntry, bool> recordExistsAt, int version, int cacheDepth)
         {
-            //TODO pieterg - fix this
-            var indexEntrySize = version == PTableVersions.Index32Bit ? PTable.IndexEntry32Size : IndexEntry64Size;
-
             Log.Trace("PTables merge started (specialized for <= 2 tables).");
             var watch = Stopwatch.StartNew();
 
@@ -183,7 +180,7 @@ namespace EventStore.Core.Index
 
                         if (recordExistsAt(current))
                         {
-                            AppendRecordToForMerge(bs, buffer, version, current, indexEntrySize);
+                            AppendRecordTo(bs, buffer, version, current, indexEntrySize);
                             dumpedEntryCount += 1;
                         }
                     }
@@ -216,7 +213,7 @@ namespace EventStore.Core.Index
         private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
         {
             //TODO GFY IF WE LIMIT THIS TO FOUR WE CAN UNROLL THIS LOOP AND WILL BE FASTER
-            var max = new IndexEntry(ulong.MinValue, long.MinValue);
+            var max = new IndexEntry(ulong.MinValue, (int)uint.MinValue, long.MinValue);
             int idx = 0;
             for (int i = 0; i < enumerators.Count; i++)
             {
@@ -230,7 +227,7 @@ namespace EventStore.Core.Index
             return idx;
         }
 
-        private static void AppendRecordToForDump(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
+        private static void AppendRecordTo(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
         {
             if (version == PTableVersions.Index32Bit){
                 var entry32 = new IndexEntry32((uint)entry.Stream, entry.Version, entry.Position);
@@ -238,22 +235,7 @@ namespace EventStore.Core.Index
                 stream.Write(buffer, 0, indexEntrySize);
             }
             else {
-                var entry64 = new IndexEntry(entry.Stream, entry.Version, entry.Position);
-                Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
-                stream.Write(buffer, 0, indexEntrySize);
-            }
-        }
-
-        private static void AppendRecordToForMerge(Stream stream, byte[] buffer, int version, IndexEntry entry, int indexEntrySize)
-        {
-            if (version == PTableVersions.Index32Bit){
-                var entry32 = new IndexEntry32(entry.Key, entry.Position);
-                Marshal.Copy((IntPtr)entry32.Bytes, buffer, 0, indexEntrySize);
-                stream.Write(buffer, 0, indexEntrySize);
-            }
-            else {
-                var entry64 = new IndexEntry(entry.Key, entry.Position);
-                Marshal.Copy((IntPtr)entry64.Bytes, buffer, 0, indexEntrySize);
+                Marshal.Copy((IntPtr)entry.Bytes, buffer, 0, indexEntrySize);
                 stream.Write(buffer, 0, indexEntrySize);
             }
         }

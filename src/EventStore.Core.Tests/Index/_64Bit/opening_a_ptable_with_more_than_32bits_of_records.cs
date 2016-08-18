@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public opening_a_ptable_with_more_than_64Bits_of_records()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
             indexEntrySize = PTable.IndexEntry64Size;
         }
     }

@@ -13,7 +13,7 @@ namespace EventStore.Core.Tests.Index._32Bit
         private string _indexMapFileName;
         private string _ptableFileName;
         private PTable _ptable;
-        protected int ptableVersion = PTableVersions.Index32Bit;
+        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         [SetUp]
         public override void SetUp()
@@ -23,13 +23,13 @@ namespace EventStore.Core.Tests.Index._32Bit
             _indexMapFileName = GetFilePathFor("index.map");
             _ptableFileName = GetFilePathFor("ptable");
 
-            var indexMap = IndexMap.FromFile(_indexMapFileName, ptableVersion, maxTablesPerLevel: 2);
+            var indexMap = IndexMap.FromFile(_indexMapFileName, _ptableVersion, maxTablesPerLevel: 2);
             var memtable = new HashListMemTable(maxSize: 10);
             memtable.Add(0,0,0);
             memtable.Add(1,1,100);
-            _ptable = PTable.FromMemtable(memtable, _ptableFileName, ptableVersion);
+            _ptable = PTable.FromMemtable(memtable, _ptableFileName, _ptableVersion);
 
-            indexMap = indexMap.AddPTable(_ptable, 0, 0, _ => true, new GuidFilenameProvider(PathName), ptableVersion).MergedMap;
+            indexMap = indexMap.AddPTable(_ptable, 0, 0, _ => true, new GuidFilenameProvider(PathName), _ptableVersion).MergedMap;
             indexMap.SaveToFile(_indexMapFileName);
         }
 

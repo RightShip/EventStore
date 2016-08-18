@@ -8,7 +8,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public searching_ptable_with_items_spanning_few_cache_segments_and_all_items_in_cache()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 
@@ -17,7 +17,7 @@ namespace EventStore.Core.Tests.Index._64Bit
     {
         public searching_ptable_with_items_spanning_few_cache_segments_and_only_some_items_in_cache()
         {
-            ptableVersion = PTableVersions.Index64Bit;
+            _ptableVersion = PTableVersions.Index64Bit;
         }
     }
 }

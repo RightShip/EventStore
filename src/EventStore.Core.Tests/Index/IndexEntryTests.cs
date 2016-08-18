@@ -1,4 +1,3 @@
-using System;
 using EventStore.Core.Index;
 using NUnit.Framework;
 

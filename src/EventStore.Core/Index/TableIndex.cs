@@ -177,7 +177,6 @@ namespace EventStore.Core.Index
             Ensure.Nonnegative(version, "version");
             Ensure.Nonnegative(position, "position");
 
-            //TODO pieterg review the interface doesn't feel right
             AddEntries(commitPos, new[] { new IndexEntry(stream, version, position) });
         }
 
@@ -407,7 +406,6 @@ namespace EventStore.Core.Index
 
         public bool TryGetOldestEntry(ulong stream, out IndexEntry entry)
         {
-            //TODO pieterg review (should we hash here?)
             var counter = 0;
             while (counter < 5)
             {
@@ -446,7 +444,6 @@ namespace EventStore.Core.Index
 
         public IEnumerable<IndexEntry> GetRange(ulong stream, int startVersion, int endVersion, int? limit = null)
         {
-            //TODO pieterg review (should we hash here?)
             var counter = 0;
             while (counter < 5)
             {
@@ -496,7 +493,7 @@ namespace EventStore.Core.Index
                 var winner = candidates[maxIdx];
 
                 var best = winner.Current;
-                if (first || last.Key != best.Key || last.Position != best.Position)
+                if (first || ((last.Stream != best.Stream) && (last.Version != best.Version)) || last.Position != best.Position)
                 {
                     last = best;
                     yield return best;
@@ -510,7 +507,7 @@ namespace EventStore.Core.Index
 
         private static int GetMaxOf(List<IEnumerator<IndexEntry>> enumerators)
         {
-            var max = new IndexEntry(ulong.MinValue, long.MinValue);
+            var max = new IndexEntry(ulong.MinValue, (int)uint.MinValue, long.MinValue);
             int idx = 0;
             for (int i = 0; i < enumerators.Count; i++)
             {
