@@ -5,15 +5,12 @@ using System.IO;
 using System.Threading;
 using System.Security.Cryptography;
 using EventStore.Common.Log;
-using EventStore.Common.Streams;
 using EventStore.Common.Utils;
 using EventStore.Core.Data;
 using EventStore.Core.DataStructures;
 using EventStore.Core.Exceptions;
 using EventStore.Core.Settings;
-using EventStore.Core.Util;
 using EventStore.Core.TransactionLog.Unbuffered;
-using System.Linq;
 
 namespace EventStore.Core.Index
 {
@@ -53,7 +50,7 @@ namespace EventStore.Core.Index
         private readonly long _count;
         private readonly long _size;
         private readonly Midpoint[] _midpoints;
-        private readonly IndexKey _minEntry, _maxEntry;
+        private readonly IndexEntryKey _minEntry, _maxEntry;
         private readonly ObjectPool<WorkItem> _workItems;
         private readonly byte _version;
         private readonly int _indexEntrySize;
@@ -66,7 +63,6 @@ namespace EventStore.Core.Index
 
         private PTable(string filename,
                        Guid id,
-                       int version,
                        int initialReaders = ESConsts.PTableInitialReaderCount,
                        int maxReaders = ESConsts.PTableMaxReaderCount,
                        int depth = 16)
@@ -81,23 +77,10 @@ namespace EventStore.Core.Index
 
             _id = id;
             _filename = filename;
-            _version = (byte)version;
-
-            if (_version == PTableVersions.Index32Bit)
-            {
-                _indexEntrySize = IndexEntry32Size;
-                _indexKeySize = IndexKey32Size;
-            }
-            if (_version == PTableVersions.Index64Bit)
-            {
-                _indexEntrySize = IndexEntry64Size;
-                _indexKeySize = IndexKey64Size;
-            }
 
             Log.Trace("Loading and Verification of PTable '{0}' started...", Path.GetFileName(Filename));
             var sw = Stopwatch.StartNew();
             _size = new FileInfo(_filename).Length;
-            _count = ((_size - PTableHeader.Size - MD5Size) / _indexEntrySize);
 
             File.SetAttributes(_filename, FileAttributes.ReadOnly | FileAttributes.NotContentIndexed);
 
@@ -113,20 +96,34 @@ namespace EventStore.Core.Index
             {
                 readerWorkItem.Stream.Seek(0, SeekOrigin.Begin);
                 var header = PTableHeader.FromStream(readerWorkItem.Stream);
-                if (header.Version != Version)
+                if ((header.Version != PTableVersions.Index32Bit) &&
+                    (header.Version != PTableVersions.Index64Bit))
                     throw new CorruptIndexException(new WrongFileVersionException(_filename, header.Version, Version));
+                _version = header.Version;
+
+                if (_version == PTableVersions.Index32Bit)
+                {
+                    _indexEntrySize = IndexEntry32Size;
+                    _indexKeySize = IndexKey32Size;
+                }
+                if (_version == PTableVersions.Index64Bit)
+                {
+                    _indexEntrySize = IndexEntry64Size;
+                    _indexKeySize = IndexKey64Size;
+                }
+                _count = ((_size - PTableHeader.Size - MD5Size) / _indexEntrySize);
 
                 if (Count == 0)
                 {
-                    _minEntry = new IndexKey(ulong.MaxValue, int.MaxValue);
-                    _maxEntry = new IndexKey(ulong.MinValue, int.MinValue);
+                    _minEntry = new IndexEntryKey(ulong.MaxValue, int.MaxValue);
+                    _maxEntry = new IndexEntryKey(ulong.MinValue, int.MinValue);
                 }
                 else
                 {
                     var minEntry = ReadEntry(IndexEntrySize, Count - 1, readerWorkItem, _version);
-                    _minEntry = new IndexKey(minEntry.Stream, minEntry.Version);
+                    _minEntry = new IndexEntryKey(minEntry.Stream, minEntry.Version);
                     var maxEntry = ReadEntry(IndexEntrySize, 0, readerWorkItem, _version);
-                    _maxEntry = new IndexKey(maxEntry.Stream, maxEntry.Version);
+                    _maxEntry = new IndexEntryKey(maxEntry.Stream, maxEntry.Version);
                 }
             }
             catch (Exception)
@@ -201,7 +198,7 @@ namespace EventStore.Core.Index
                         stream.Read(buffer, 0, PTableHeader.Size);
                         md5.TransformBlock(buffer, 0, PTableHeader.Size, null, 0);
                         long previousNextIndex = long.MinValue;
-                        var previousKey = new IndexKey(long.MaxValue, int.MaxValue);
+                        var previousKey = new IndexEntryKey(long.MaxValue, int.MaxValue);
                         for (long k = 0; k < midpointsCount; ++k)
                         {
                             var nextIndex = (long)k * (count - 1) / (midpointsCount - 1);
@@ -210,14 +207,14 @@ namespace EventStore.Core.Index
                                 ReadUntilWithMd5(PTableHeader.Size + IndexEntrySize * nextIndex, stream, md5);
                                 stream.Read(buffer, 0, IndexKeySize);
                                 md5.TransformBlock(buffer, 0, IndexKeySize, null, 0);
-                                IndexKey key;
+                                IndexEntryKey key;
                                 if (_version == PTableVersions.Index32Bit)
                                 {
-                                    key = new IndexKey(BitConverter.ToUInt32(buffer, 4), BitConverter.ToInt32(buffer, 0));
+                                    key = new IndexEntryKey(BitConverter.ToUInt32(buffer, 4), BitConverter.ToInt32(buffer, 0));
                                 }
                                 else
                                 {
-                                    key = new IndexKey(BitConverter.ToUInt64(buffer, 4), BitConverter.ToInt32(buffer, 0));
+                                    key = new IndexEntryKey(BitConverter.ToUInt64(buffer, 4), BitConverter.ToInt32(buffer, 0));
                                 }
                                 midpoints[k] = new Midpoint(key, nextIndex);
                                 previousNextIndex = nextIndex;
@@ -339,7 +336,6 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startNumber);
             var endKey = BuildKey(stream, endNumber);
 
-            //if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
             if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
                 return false;
 
@@ -354,7 +350,7 @@ namespace EventStore.Core.Index
                 {
                     var mid = low + (high - low) / 2;
                     IndexEntry midpoint = ReadEntry(IndexEntrySize, mid, workItem, _version);
-                    var midpointKey = new IndexKey(midpoint.Stream, midpoint.Version);
+                    var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
                     if (midpointKey.GreaterThan(endKey))
                         low = mid + 1;
                     else
@@ -362,7 +358,7 @@ namespace EventStore.Core.Index
                 }
 
                 var candEntry = ReadEntry(IndexEntrySize, high, workItem, _version);
-                var candKey = new IndexKey(candEntry.Stream, candEntry.Version);
+                var candKey = new IndexEntryKey(candEntry.Stream, candEntry.Version);
                 if (candKey.GreaterThan(endKey))
                     throw new Exception(string.Format("candEntry.Key {0} > startKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", candEntry.Key, startKey, stream, startNumber, endNumber, Filename));
                 if (candKey.SmallerThan(startKey))
@@ -405,7 +401,7 @@ namespace EventStore.Core.Index
                 {
                     var mid = low + (high - low + 1) / 2;
                     var midpoint = ReadEntry(IndexEntrySize, mid, workItem, _version);
-                    var midpointKey = new IndexKey(midpoint.Stream, midpoint.Version);
+                    var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
                     if (midpointKey.SmallerThan(startKey))
                         high = mid - 1;
                     else
@@ -413,7 +409,7 @@ namespace EventStore.Core.Index
                 }
 
                 var candEntry = ReadEntry(IndexEntrySize, high, workItem, _version);
-                var candidateKey = new IndexKey(candEntry.Stream, candEntry.Version);
+                var candidateKey = new IndexEntryKey(candEntry.Stream, candEntry.Version);
                 if (candidateKey.SmallerThan(startKey))
                     throw new Exception(string.Format("candEntry.Key {0} < startKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", candEntry.Key, startKey, stream, startNumber, endNumber, Filename));
                 if (candidateKey.GreaterThan(endKey))
@@ -436,7 +432,6 @@ namespace EventStore.Core.Index
             var startKey = BuildKey(stream, startNumber);
             var endKey = BuildKey(stream, endNumber);
 
-            //if (_midpoints != null && (startKey > _midpoints[0].Key || endKey < _midpoints[_midpoints.Length - 1].Key))
             if (startKey.GreaterThan(_maxEntry) || endKey.SmallerThan(_minEntry))
                 return result;
 
@@ -450,7 +445,7 @@ namespace EventStore.Core.Index
                 {
                     var mid = low + (high - low) / 2;
                     IndexEntry midpoint = ReadEntry(IndexEntrySize, mid, workItem, _version);
-                    var midpointKey = new IndexKey(midpoint.Stream, midpoint.Version);
+                    var midpointKey = new IndexEntryKey(midpoint.Stream, midpoint.Version);
                     if (midpointKey.SmallerEqualsThan(endKey))
                         high = mid;
                     else
@@ -461,7 +456,7 @@ namespace EventStore.Core.Index
                 for (long i = high, n = Count; i < n; ++i)
                 {
                     IndexEntry entry = ReadNextNoSeek(workItem, _version);
-                    var candidateKey = new IndexKey(entry.Stream, entry.Version);
+                    var candidateKey = new IndexEntryKey(entry.Stream, entry.Version);
                     if (candidateKey.GreaterThan(endKey))
                         throw new Exception(string.Format("entry.Key {0} > endKey {1}, stream {2}, startNum {3}, endNum {4}, PTable: {5}.", entry.Key, endKey, stream, startNumber, endNumber, Filename));
                     if (candidateKey.SmallerThan(startKey))
@@ -477,12 +472,12 @@ namespace EventStore.Core.Index
             }
         }
 
-        private static IndexKey BuildKey(ulong stream, int version)
+        private static IndexEntryKey BuildKey(ulong stream, int version)
         {
-            return new IndexKey(stream, version);
+            return new IndexEntryKey(stream, version);
         }
 
-        private Range LocateRecordRange(IndexKey key)
+        private Range LocateRecordRange(IndexEntryKey key)
         {
             var midpoints = _midpoints;
             if (midpoints == null)
@@ -492,7 +487,7 @@ namespace EventStore.Core.Index
             return new Range(midpoints[lowerMidpoint].ItemIndex, midpoints[upperMidpoint].ItemIndex);
         }
 
-        private long LowerMidpointBound(Midpoint[] midpoints, IndexKey key)
+        private long LowerMidpointBound(Midpoint[] midpoints, IndexEntryKey key)
         {
             long l = 0;
             long r = midpoints.Length - 1;
@@ -507,7 +502,7 @@ namespace EventStore.Core.Index
             return l;
         }
 
-        private long UpperMidpointBound(Midpoint[] midpoints, IndexKey key)
+        private long UpperMidpointBound(Midpoint[] midpoints, IndexEntryKey key)
         {
             long l = 0;
             long r = midpoints.Length - 1;
@@ -597,27 +592,27 @@ namespace EventStore.Core.Index
 
         internal struct Midpoint
         {
-            public readonly IndexKey Key;
+            public readonly IndexEntryKey Key;
             public readonly long ItemIndex;
 
-            public Midpoint(IndexKey key, long itemIndex)
+            public Midpoint(IndexEntryKey key, long itemIndex)
             {
                 Key = key;
                 ItemIndex = itemIndex;
             }
         }
 
-        internal struct IndexKey
+        internal struct IndexEntryKey
         {
             public ulong Stream;
             public int Version;
-            public IndexKey(ulong stream, int version)
+            public IndexEntryKey(ulong stream, int version)
             {
                 Stream = stream;
                 Version = version;
             }
 
-            public bool GreaterThan(IndexKey other)
+            public bool GreaterThan(IndexEntryKey other)
             {
                 if(Stream == other.Stream)
                 {
@@ -626,17 +621,25 @@ namespace EventStore.Core.Index
                 return Stream > other.Stream;
             }
 
-            public bool SmallerThan(IndexKey other)
+            public bool SmallerThan(IndexEntryKey other)
             {
                 if(Stream == other.Stream)
                 {
                     return Version < other.Version;
                 }
                 return Stream < other.Stream;
-                //return GetNumber(Stream, Version) < GetNumber(other.Stream, other.Version);
             }
 
-            public bool SmallerEqualsThan(IndexKey other)
+            public bool GreaterEqualsThan(IndexEntryKey other)
+            {
+                if (Stream == other.Stream)
+                {
+                    return Version >= other.Version;
+                }
+                return Stream >= other.Stream;
+            }
+
+            public bool SmallerEqualsThan(IndexEntryKey other)
             {
                 if(Stream == other.Stream)
                 {

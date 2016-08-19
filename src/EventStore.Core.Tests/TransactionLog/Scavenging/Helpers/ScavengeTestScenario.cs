@@ -30,7 +30,6 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
         private DbResult _dbResult;
         private LogRecord[][] _keptRecords;
         private bool _checked;
-        protected int _ptableVersion = PTableVersions.Index32Bit;
 
         protected virtual bool UnsafeIgnoreHardDelete() {
             return false;
@@ -65,20 +64,21 @@ namespace EventStore.Core.Tests.TransactionLog.Scavenging.Helpers
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
                 () => new TFChunkReader(_dbResult.Db, _dbResult.Db.Config.WriterCheckpoint));
-            var tableIndex = new TableIndex(indexPath,
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            var tableIndex = new TableIndex(indexPath, lowHasher, highHasher,
                                             () => new HashListMemTable(maxSize: 200),
                                             () => new TFReaderLease(readerPool),
-                                            _ptableVersion,
+                                            PTableVersions.Index64Bit,
                                             maxSizeForMemory: 100,
                                             maxTablesPerLevel: 2);
-            var hasher = new CombinedHasher(new XXHashUnsafe(), new Murmur3AUnsafe(), _ptableVersion == PTableVersions.Index64Bit);
-            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, hasher, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);
+            ReadIndex = new ReadIndex(new NoopPublisher(), readerPool, tableIndex, 100, true, _metastreamMaxCount, Opts.HashCollisionReadLimitDefault);
             ReadIndex.Init(_dbResult.Db.Config.WriterCheckpoint.Read());
 
             //var scavengeReadIndex = new ScavengeReadIndex(_dbResult.Streams, _metastreamMaxCount);
             var bus = new InMemoryBus("Bus");
             var ioDispatcher = new IODispatcher(bus, new PublishEnvelope(bus));
-            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, hasher, ReadIndex, Guid.NewGuid(), "fakeNodeIp",
+            var scavenger = new TFChunkScavenger(_dbResult.Db, ioDispatcher, tableIndex, ReadIndex, Guid.NewGuid(), "fakeNodeIp",
                                             unsafeIgnoreHardDeletes: UnsafeIgnoreHardDelete());
             scavenger.Scavenge(alwaysKeepScavenged: true, mergeChunks: false);
         }

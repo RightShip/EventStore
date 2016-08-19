@@ -165,13 +165,12 @@ namespace EventStore.Core
             var readerPool = new ObjectPool<ITransactionFileReader>(
                 "ReadIndex readers pool", ESConsts.PTableInitialReaderCount, ESConsts.PTableMaxReaderCount,
                 () => new TFChunkReader(db, db.Config.WriterCheckpoint));
-            //TODO: PG - Switch PTable Version
-            var ptableVersion = PTableVersions.Index64Bit;
-            var hasher = new CombinedHasher(new XXHashUnsafe(), new Murmur3AUnsafe(), ptableVersion == PTableVersions.Index64Bit);
             var tableIndex = new TableIndex(indexPath,
+                                            new XXHashUnsafe(),
+                                            new Murmur3AUnsafe(),
                                             () => new HashListMemTable(maxSize: vNodeSettings.MaxMemtableEntryCount * 2),
                                             () => new TFReaderLease(readerPool),
-                                            ptableVersion,
+                                            PTableVersions.Index64Bit,
                                             maxSizeForMemory: vNodeSettings.MaxMemtableEntryCount,
                                             maxTablesPerLevel: 2,
                                             inMem: db.Config.InMemDb,
@@ -179,7 +178,6 @@ namespace EventStore.Core
 			var readIndex = new ReadIndex(_mainQueue,
                                           readerPool,
                                           tableIndex,
-                                          hasher,
                                           ESConsts.StreamInfoCacheCapacity,
                                           Application.IsDefined(Application.AdditionalCommitChecks),
                                           Application.IsDefined(Application.InfiniteMetastreams) ? int.MaxValue : 1,
@@ -468,7 +466,6 @@ namespace EventStore.Core
             var storageScavenger = new StorageScavenger(db,
                                                         ioDispatcher,
                                                         tableIndex,
-                                                        hasher,
                                                         readIndex,
                                                         Application.IsDefined(Application.AlwaysKeepScavenged),
                                                         _nodeInfo.ExternalHttp.ToString(),

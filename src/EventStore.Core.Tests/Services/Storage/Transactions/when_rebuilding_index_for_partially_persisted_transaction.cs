@@ -13,13 +13,13 @@ using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.TransactionLog.LogRecords;
 using NUnit.Framework;
 using EventStore.Core.Util;
+using EventStore.Core.Index.Hashes;
 
 namespace EventStore.Core.Tests.Services.Storage.Transactions
 {
     [TestFixture]
     public class when_rebuilding_index_for_partially_persisted_transaction : ReadIndexTestScenario
     {
-        protected int _ptableVersion = PTableVersions.Index32Bit;
         public when_rebuilding_index_for_partially_persisted_transaction(): base(maxEntriesInMemTable: 10)
         {
         }
@@ -33,15 +33,16 @@ namespace EventStore.Core.Tests.Services.Storage.Transactions
             TableIndex.Close(removeFiles: false);
 
             var readers = new ObjectPool<ITransactionFileReader>("Readers", 2, 2, () => new TFChunkReader(Db, WriterCheckpoint));
-            TableIndex = new TableIndex(GetFilePathFor("index"),
+            var lowHasher = new XXHashUnsafe();
+            var highHasher = new Murmur3AUnsafe();
+            TableIndex = new TableIndex(GetFilePathFor("index"), lowHasher, highHasher,
                                         () => new HashListMemTable(maxSize: MaxEntriesInMemTable*2),
                                         () => new TFReaderLease(readers),
-                                        _ptableVersion,
+                                        PTableVersions.Index64Bit,
                                         maxSizeForMemory: MaxEntriesInMemTable);
             ReadIndex = new ReadIndex(new NoopPublisher(),
                                       readers,
                                       TableIndex,
-                                      new ByLengthHasher(),
                                       0,
                                       additionalCommitChecks: true, 
                                       metastreamMaxCount: 1,
